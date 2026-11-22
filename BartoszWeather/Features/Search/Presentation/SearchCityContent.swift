@@ -12,7 +12,18 @@ nonisolated public enum SearchCityContent: Hashable, Sendable {
     case invalidInput
     case noResults(query: String)
     case offline
+    /// The weather service's request limit has been reached.
+    case rateLimited
     case failure
+
+    /// The state that reports a failed search: `offline`, `rateLimited` for HTTP 429, and `failure` for anything else.
+    public init(error: any Error) {
+        self = switch error as? APIError {
+        case .offline: .offline
+        case .server(status: 429, _): .rateLimited
+        default: .failure
+        }
+    }
 
     public var isInputInvalid: Bool {
         self == .invalidInput
@@ -57,6 +68,13 @@ nonisolated public enum SearchCityContent: Hashable, Sendable {
                 icon: .wifiSlash,
                 title: String(localized: "No internet connection"),
                 message: String(localized: "Check your connection and try again."),
+                showsRetry: true
+            )
+        case .rateLimited:
+            SearchStateMessage(
+                icon: .clockBadgeExclamationmark,
+                title: String(localized: "Too many requests"),
+                message: String(localized: "The weather service limit has been reached. Please try again later."),
                 showsRetry: true
             )
         case .failure:
