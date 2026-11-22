@@ -78,6 +78,14 @@ struct URLSessionAPIClientTests {
         }
     }
 
+    /// An endpoint generic over its response, so `EmptyResponse` reaches the unconstrained default decoder.
+    nonisolated struct GenericEndpoint<Value: Decodable & Sendable>: Endpoint {
+        typealias Response = Value
+
+        let baseURL: URL
+        let path = "/payload"
+    }
+
     private let client: URLSessionAPIClient = {
         let configuration = URLSessionConfiguration.api
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -214,6 +222,22 @@ struct URLSessionAPIClientTests {
         await #expect(throws: APIError.offline) {
             try await client.send(CSVEndpoint(baseURL: baseURL))
         }
+    }
+
+    @Test func decodesJSONThroughAGenericEndpoint() async throws {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)
+
+        let payload = try await client.send(GenericEndpoint<Payload>(baseURL: baseURL))
+
+        #expect(payload == Payload(value: "Kraków"))
+    }
+
+    @Test func decodesEmptyResponseThroughAGenericEndpoint() async throws {
+        let baseURL = StubURLProtocol.register(status: 204, contentType: nil, body: "")
+
+        let response = try await client.send(GenericEndpoint<EmptyResponse>(baseURL: baseURL))
+
+        #expect(response == EmptyResponse())
     }
 
     @Test func rejectsResponseLargerThanTheSizeCap() async {

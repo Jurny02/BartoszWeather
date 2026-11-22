@@ -30,6 +30,7 @@ nonisolated public protocol Endpoint: Sendable {
 
     /// Decodes a successful response whose body is empty or accepted by `acceptsResponse(contentType:)`.
     ///
+    /// The default returns `EmptyResponse` without reading the body and decodes any other type as JSON.
     /// A thrown `CancellationError` reaches the caller unchanged; any other error becomes `APIError.decoding`.
     func decode(_ data: Data) throws -> Response
     /// Reads the server's explanation from the body of a failed response, for logs only.
@@ -43,7 +44,10 @@ nonisolated extension Endpoint {
     public var body: HTTPBody? { nil }
 
     public func decode(_ data: Data) throws -> Response {
-        try JSONDecoder().decode(Response.self, from: data)
+        if let empty = EmptyResponse() as? Response {
+            return empty
+        }
+        return try JSONDecoder().decode(Response.self, from: data)
     }
 
     public func errorReason(from data: Data) -> String? {
