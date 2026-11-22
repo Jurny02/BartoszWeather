@@ -57,10 +57,11 @@ struct WeatherFormatterTests {
         #expect(formatter.hour(lateEvening) == "00:30")
     }
 
-    @Test func showsTheHourOnA24HourClockRegardlessOfLocale() {
-        let posix = WeatherFormatter(timeZone: warsaw, locale: Locale(identifier: "en_US_POSIX"))
+    @Test(arguments: ["en_US_POSIX", "en_US@hours=h12", "ar_EG", "hi_IN"])
+    func showsTheHourOnA24HourClockRegardlessOfLocale(identifier: String) {
+        let formatter = WeatherFormatter(timeZone: warsaw, locale: Locale(identifier: identifier))
 
-        #expect(posix.hour(noon.addingTimeInterval(3600 * 2)) == "16:05")
+        #expect(formatter.hour(noon.addingTimeInterval(3600 * 2)) == "16:05")
     }
 
     @Test func namesTheCurrentDayToday() {

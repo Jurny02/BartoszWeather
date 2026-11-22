@@ -53,9 +53,10 @@ nonisolated public struct WeatherFormatter: Sendable {
         return "\(sign)\(abs(degrees)) \(unit)"
     }
 
-    /// The hour on a 24-hour clock in the city's time zone, such as "15:00".
+    /// The hour on a 24-hour clock in the city's time zone, such as "15:00",
+    /// whatever the locale's digits or the user's 12-hour setting.
     public func hour(_ date: Date) -> String {
-        format(date, pattern: "HH:mm")
+        format(date, pattern: "HH:mm", locale: Locale(identifier: "en_US_POSIX"))
     }
 
     /// The day name in the city's time zone: "Today" when `date` falls on the same day as `now`, otherwise "Wed".
@@ -75,10 +76,10 @@ nonisolated public struct WeatherFormatter: Sendable {
         return calendar
     }
 
-    private func format(_ date: Date, pattern: String) -> String {
+    private func format(_ date: Date, pattern: String, locale: Locale? = nil) -> String {
         let formatter = DateFormatter()
         formatter.calendar = calendar
-        formatter.locale = locale
+        formatter.locale = locale ?? self.locale
         formatter.timeZone = timeZone
         formatter.dateFormat = pattern
         return formatter.string(from: date)
