@@ -36,7 +36,7 @@ nonisolated public final class URLSessionAPIClient: APIClient {
             logger.error("GET \(endpoint.path, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
             throw APIError.server(status: response.statusCode, reason: reason)
         }
-        guard Self.isJSON(response) else {
+        guard data.isEmpty || Self.isJSON(response) else {
             throw APIError.offline
         }
         do {

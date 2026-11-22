@@ -103,6 +103,17 @@ struct URLSessionAPIClientTests {
         }
     }
 
+    @Test func reportsEmptySuccessfulResponseAsDecodingError() async {
+        let baseURL = StubURLProtocol.register(status: 204, contentType: nil, body: "")
+
+        await #expect {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        } throws: { error in
+            guard case APIError.decoding = error else { return false }
+            return true
+        }
+    }
+
     @Test func rejectsResponseLargerThanTheSizeCap() async {
         let body = #"{"value":""# + String(repeating: "a", count: URLSessionAPIClient.maxResponseSize) + #""}"#
         let baseURL = StubURLProtocol.register(status: 200, body: body)
