@@ -3,8 +3,7 @@ import SwiftUI
 struct TemperatureRangeBar: View {
     @Environment(\.weatherAppearance) private var appearance
     private let segment: ClosedRange<Double>
-    @ScaledMetric(relativeTo: .body) private var maximumWidth: CGFloat = 64
-    private let minimumWidth: CGFloat = 24
+    @ScaledMetric(relativeTo: .body) private var width: CGFloat = 64
     private let height: CGFloat = 4
     private let trackOpacity = 0.25
 
@@ -31,8 +30,7 @@ struct TemperatureRangeBar: View {
                         .offset(x: proxy.size.width * segment.lowerBound)
                 }
             }
-            .frame(minWidth: minimumWidth, maxWidth: maximumWidth)
-            .frame(height: height)
+            .frame(width: width, height: height)
             .accessibilityHidden(true)
     }
 }
