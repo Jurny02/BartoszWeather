@@ -20,9 +20,7 @@ nonisolated extension CurrentWeather {
         let place = ([city.name] + city.regionAndCountryParts).joined(separator: ", ")
         let now = "\(WeatherFormatter.spokenTemperature(temperature)), \(condition.localizedDescription)"
         var sentences = [place, now]
-        if apparentTemperature != nil {
-            sentences.append(String(localized: "Feels like \(WeatherFormatter.spokenTemperature(apparentTemperature))"))
-        }
+        sentences.append(String(localized: "Feels like \(WeatherFormatter.spokenTemperature(apparentTemperature))"))
         if showsStrongWindBadge {
             sentences.append(String(localized: "Strong wind"))
         }

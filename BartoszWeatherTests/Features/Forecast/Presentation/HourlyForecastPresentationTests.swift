@@ -38,10 +38,10 @@ struct HourlyForecastPresentationTests {
         #expect(hour(precipitation: 5).accessibilityLabel(timeLabel: "15:00") == "15:00, 24 degrees, Clear sky")
     }
 
-    @Test func readsMissingTemperatureAsNoData() {
+    @Test func readsMissingValuesAsNoData() {
         #expect(
             hour(temperature: nil, precipitation: nil).accessibilityLabel(timeLabel: "15:00")
-                == "15:00, No data, Clear sky"
+                == "15:00, No data, Clear sky, chance of precipitation: No data"
         )
     }
 }

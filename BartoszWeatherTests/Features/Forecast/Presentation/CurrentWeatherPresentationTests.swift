@@ -51,7 +51,7 @@ struct CurrentWeatherPresentationTests {
     @Test func readsMissingValuesAsNoData() {
         #expect(
             current(temperature: nil, apparent: nil).accessibilityLabel(city: city)
-                == "Kraków, Małopolskie, Poland. No data, Clear sky."
+                == "Kraków, Małopolskie, Poland. No data, Clear sky. Feels like No data."
         )
     }
 

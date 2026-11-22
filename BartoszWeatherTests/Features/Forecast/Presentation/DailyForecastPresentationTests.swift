@@ -33,8 +33,11 @@ struct DailyForecastPresentationTests {
         )
     }
 
-    @Test func leavesOutMissingValuesFromTheSpokenLabel() {
-        #expect(day(low: nil, high: nil, precipitation: nil).accessibilityLabel(dayLabel: "Wed") == "Wed, Rain")
+    @Test func readsMissingValuesAsNoData() {
+        #expect(
+            day(low: nil, high: nil, precipitation: nil).accessibilityLabel(dayLabel: "Wed")
+                == "Wed, Rain, low: No data, high: No data, chance of precipitation: No data"
+        )
     }
 
     @Test func spansTheLowestLowAndHighestHigh() {

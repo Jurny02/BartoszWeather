@@ -7,6 +7,11 @@ nonisolated public struct WeatherFormatter: Sendable {
     /// Shown instead of a value the forecast source did not report.
     public static let missingValue = "—"
 
+    /// Captions and VoiceOver use this text instead of a value the forecast source did not report.
+    public static var noData: String {
+        String(localized: "No data")
+    }
+
     public let timeZone: TimeZone
     public let locale: Locale
 
@@ -41,7 +46,7 @@ nonisolated public struct WeatherFormatter: Sendable {
 
     /// A temperature as VoiceOver should read it, such as "24 degrees" or "minus 12 degrees".
     public static func spokenTemperature(_ value: Double?) -> String {
-        guard let value else { return String(localized: "No data") }
+        guard let value else { return noData }
         let degrees = Int(value.rounded())
         let unit = abs(degrees) == 1 ? String(localized: "degree") : String(localized: "degrees")
         let sign = degrees < 0 ? String(localized: "minus") + " " : ""

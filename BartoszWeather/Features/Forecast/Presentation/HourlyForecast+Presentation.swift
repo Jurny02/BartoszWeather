@@ -18,11 +18,15 @@ nonisolated extension HourlyForecast {
         return precipitationProbability >= Self.visiblePrecipitationThreshold
     }
 
-    /// The whole cell as one VoiceOver sentence; `timeLabel` is the hour or "Now".
+    /// The whole cell as one VoiceOver sentence, reading missing values as "No data"; `timeLabel` is the hour or "Now".
     public func accessibilityLabel(timeLabel: String) -> String {
         var parts = [timeLabel, WeatherFormatter.spokenTemperature(temperature), condition.localizedDescription]
-        if let precipitationProbability, showsPrecipitation {
-            parts.append(String(localized: "\(precipitationProbability)% chance of precipitation"))
+        if let precipitationProbability {
+            if showsPrecipitation {
+                parts.append(String(localized: "\(precipitationProbability)% chance of precipitation"))
+            }
+        } else {
+            parts.append(String(localized: "chance of precipitation: \(WeatherFormatter.noData)"))
         }
         return parts.joined(separator: ", ")
     }

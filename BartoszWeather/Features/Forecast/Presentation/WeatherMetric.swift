@@ -54,13 +54,13 @@ nonisolated public enum WeatherMetric: Hashable, Identifiable, Sendable {
     public var caption: String {
         switch self {
         case .cloudCover(let percent):
-            percent.map(Self.cloudDescription) ?? Self.noData
+            percent.map(Self.cloudDescription) ?? WeatherFormatter.noData
         case .precipitation(let percent):
-            percent == nil ? Self.noData : String(localized: "Next hour")
+            percent == nil ? WeatherFormatter.noData : String(localized: "Next hour")
         case .wind(let wind):
-            wind == nil ? Self.noData : String(localized: "Gusts \(WeatherFormatter.speed(wind?.gusts))")
+            wind == nil ? WeatherFormatter.noData : String(localized: "Gusts \(WeatherFormatter.speed(wind?.gusts))")
         case .humidity(let percent):
-            percent == nil ? Self.noData : String(localized: "Relative humidity")
+            percent == nil ? WeatherFormatter.noData : String(localized: "Relative humidity")
         }
     }
 
@@ -76,21 +76,30 @@ nonisolated public enum WeatherMetric: Hashable, Identifiable, Sendable {
         return wind?.isStrong ?? false
     }
 
-    /// The whole tile as one VoiceOver sentence.
+    /// The whole tile as one VoiceOver sentence, reading missing values as "No data".
     public var accessibilityLabel: String {
+        guard hasValue else { return "\(title), \(WeatherFormatter.noData)" }
         var parts = [title, value]
         if let direction {
             parts.append(String(localized: "from \(direction.spokenName)"))
         }
-        parts.append(caption)
+        parts.append(spokenCaption)
         if isHighlighted {
             parts.append(String(localized: "strong wind"))
         }
         return parts.joined(separator: ", ")
     }
 
-    private static var noData: String {
-        String(localized: "No data")
+    private var hasValue: Bool {
+        switch self {
+        case .cloudCover(let percent), .precipitation(let percent), .humidity(let percent): percent != nil
+        case .wind(let wind): wind != nil
+        }
+    }
+
+    private var spokenCaption: String {
+        guard case .wind(let wind?) = self, wind.gusts == nil else { return caption }
+        return String(localized: "Gusts: \(WeatherFormatter.noData)")
     }
 
     private static func cloudDescription(percent: Int) -> String {

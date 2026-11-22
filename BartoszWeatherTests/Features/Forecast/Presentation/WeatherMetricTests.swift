@@ -89,6 +89,17 @@ struct WeatherMetricTests {
         #expect(wind.accessibilityLabel == "Wind, 8 km/h, from northwest, Gusts 20 km/h")
     }
 
+    @Test func readsMissingGustsAsNoData() {
+        let wind = WeatherMetric.wind(Wind(speed: 8, gusts: nil, direction: nil))
+
+        #expect(wind.caption == "Gusts —")
+        #expect(wind.accessibilityLabel == "Wind, 8 km/h, Gusts: No data")
+    }
+
+    @Test func readsMissingWindAsNoData() {
+        #expect(WeatherMetric.wind(nil).accessibilityLabel == "Wind, No data")
+    }
+
     @Test func readsStrongWindAsStrong() {
         let wind = WeatherMetric.wind(Wind(speed: 52, gusts: 78, direction: nil))
 
@@ -97,6 +108,6 @@ struct WeatherMetricTests {
 
     @Test func readsOtherTilesAsTitleValueAndCaption() {
         #expect(WeatherMetric.humidity(40).accessibilityLabel == "Humidity, 40%, Relative humidity")
-        #expect(WeatherMetric.cloudCover(nil).accessibilityLabel == "Cloud cover, —, No data")
+        #expect(WeatherMetric.cloudCover(nil).accessibilityLabel == "Cloud cover, No data")
     }
 }

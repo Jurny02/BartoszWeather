@@ -13,18 +13,24 @@ nonisolated extension DailyForecast {
         WeatherFormatter.percent(precipitationProbability)
     }
 
-    /// The whole row as one VoiceOver sentence; `dayLabel` is the weekday or "Today".
+    /// The whole row as one VoiceOver sentence, reading missing values as "No data"; `dayLabel` is the weekday or "Today".
     public func accessibilityLabel(dayLabel: String) -> String {
         var parts = [dayLabel, condition.localizedDescription]
-        if let minTemperature {
-            parts.append(String(localized: "low \(WeatherFormatter.spokenTemperature(minTemperature))"))
-        }
-        if let maxTemperature {
-            parts.append(String(localized: "high \(WeatherFormatter.spokenTemperature(maxTemperature))"))
-        }
-        if let precipitationProbability {
-            parts.append(String(localized: "\(precipitationProbability)% chance of precipitation"))
-        }
+        let noData = WeatherFormatter.noData
+        parts.append(
+            minTemperature == nil
+                ? String(localized: "low: \(noData)")
+                : String(localized: "low \(WeatherFormatter.spokenTemperature(minTemperature))")
+        )
+        parts.append(
+            maxTemperature == nil
+                ? String(localized: "high: \(noData)")
+                : String(localized: "high \(WeatherFormatter.spokenTemperature(maxTemperature))")
+        )
+        parts.append(
+            precipitationProbability.map { String(localized: "\($0)% chance of precipitation") }
+                ?? String(localized: "chance of precipitation: \(noData)")
+        )
         return parts.joined(separator: ", ")
     }
 
