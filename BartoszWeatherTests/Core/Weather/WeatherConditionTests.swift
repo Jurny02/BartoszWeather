@@ -17,7 +17,7 @@ struct WeatherConditionTests {
         (77, .snowGrains),
         (80, .rainShowers), (81, .rainShowers),
         (85, .snowShowers), (86, .snowShowers),
-        (95, .thunderstorm),
+        (95, .thunderstorm), (97, .thunderstorm),
         (96, .thunderstormWithHail), (99, .thunderstormWithHail),
     ])
     func mapsWMOCode(code: Int, condition: WeatherCondition) {

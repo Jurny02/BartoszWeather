@@ -37,7 +37,7 @@ nonisolated public enum WeatherCondition: Hashable, Sendable {
         case 77: .snowGrains
         case 80, 81: .rainShowers
         case 85, 86: .snowShowers
-        case 95: .thunderstorm
+        case 95, 97: .thunderstorm
         case 96, 99: .thunderstormWithHail
         default: .unknown
         }
