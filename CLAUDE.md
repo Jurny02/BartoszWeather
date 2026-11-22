@@ -55,7 +55,9 @@ Modules are folders inside one app target, laid out so they can later become rea
   - Scopes: `app`, `core`, `networking`, `theming`, `search`, `forecast`, `ci`.
     Leave the scope out only for repository-wide changes (tooling, docs, ignore rules).
 - Each commit is one coherent change with its tests, and builds with green tests.
-  Red-green cycles stay local; do not commit failing tests or fix-up commits.
+  Red-green cycles stay local; do not commit failing tests.
+  Fold a fix into the commit it belongs to while that commit is unpushed.
+  Never rewrite pushed commits: address findings on them with a focused follow-up commit.
 - Before every push, run the `pre-push-review` skill and resolve its findings.
 - PRs are merged with a merge commit. Never squash.
 - Local-only files (listed in `.git/info/exclude`): `TASKS.md`, `networkInfo.md`, the task PDF.
