@@ -45,13 +45,20 @@ extension Image {
 
 #Preview {
     ScrollView {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: Spacing.medium) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96))], spacing: Spacing.medium) {
             ForEach(Icon.allCases, id: \.self) { icon in
-                Image(icon: icon)
-                    .font(.title2)
-                    .symbolRenderingMode(.multicolor)
+                VStack(spacing: Spacing.xSmall) {
+                    Image(icon: icon)
+                        .font(.title2)
+                        .foregroundStyle(Color(.Text.primary))
+                    Text(icon.rawValue)
+                        .typography(.caption)
+                        .foregroundStyle(Color(.Text.secondary))
+                        .multilineTextAlignment(.center)
+                }
             }
         }
         .padding(Spacing.medium)
     }
+    .background(Color(.background))
 }
