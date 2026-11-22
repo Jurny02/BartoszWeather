@@ -51,7 +51,14 @@ public struct RetryButton: View {
     }
 }
 
-private struct RetryButtonStyle: ButtonStyle {
+struct RetryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    nonisolated static func opacity(isEnabled: Bool, isPressed: Bool) -> Double {
+        if !isEnabled { return Opacity.disabled }
+        return isPressed ? Opacity.pressed : 1
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(Color(.onAccent))
@@ -59,7 +66,7 @@ private struct RetryButtonStyle: ButtonStyle {
             .padding(.vertical, Spacing.small)
             .frame(minWidth: Size.buttonMinWidth, minHeight: Size.buttonHeight)
             .background(Color(.accent), in: .rect(cornerRadius: Radius.medium))
-            .opacity(configuration.isPressed ? Opacity.pressed : 1)
+            .opacity(Self.opacity(isEnabled: isEnabled, isPressed: configuration.isPressed))
             .contentShape(.rect(cornerRadius: Radius.medium))
     }
 }

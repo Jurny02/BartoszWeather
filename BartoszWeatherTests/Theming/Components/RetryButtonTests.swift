@@ -17,4 +17,14 @@ struct RetryButtonTests {
         #expect(state.isDisabled)
         #expect(state.showsActivityIndicator)
     }
+
+    @Test(arguments: [
+        (true, false, 1.0),
+        (true, true, Opacity.pressed),
+        (false, false, Opacity.disabled),
+        (false, true, Opacity.disabled),
+    ])
+    func dimsWhenPressedOrDisabled(isEnabled: Bool, isPressed: Bool, opacity: Double) {
+        #expect(RetryButtonStyle.opacity(isEnabled: isEnabled, isPressed: isPressed) == opacity)
+    }
 }
