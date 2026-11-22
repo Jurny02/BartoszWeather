@@ -44,9 +44,20 @@ struct EndpointTests {
         #expect(request.url?.absoluteString == "https://geocoding-api.open-meteo.com/v1/search")
     }
 
-    @Test func rejectsPathWithoutLeadingSlash() {
+    @Test(arguments: [
+        "https://geocoding-api.open-meteo.com",
+        "https://geocoding-api.open-meteo.com/api",
+        "https://geocoding-api.open-meteo.com/api/",
+    ])
+    func rejectsPathWithoutLeadingSlash(baseURL: String) {
         #expect(throws: APIError.invalidRequest) {
-            try SearchEndpoint(path: "v1/search").makeRequest()
+            try SearchEndpoint(baseURL: URL(string: baseURL)!, path: "v1/search").makeRequest()
         }
+    }
+
+    @Test func appendsPathToBaseURLWithPath() throws {
+        let request = try SearchEndpoint(baseURL: URL(string: "https://geocoding-api.open-meteo.com/api")!).makeRequest()
+
+        #expect(request.url?.absoluteString == "https://geocoding-api.open-meteo.com/api/v1/search")
     }
 }

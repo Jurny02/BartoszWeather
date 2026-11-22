@@ -27,7 +27,8 @@ nonisolated extension Endpoint {
     }
 
     public func makeRequest() throws(APIError) -> URLRequest {
-        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+        guard path.hasPrefix("/"),
+              var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             throw .invalidRequest
         }
         if components.path.hasSuffix("/") {
