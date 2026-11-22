@@ -46,6 +46,14 @@ struct URLSessionAPIClientTests {
         }
     }
 
+    nonisolated struct DeletePayloadEndpoint: Endpoint {
+        typealias Response = EmptyResponse
+
+        let baseURL: URL
+        let path = "/payload"
+        let method = HTTPMethod.delete
+    }
+
     private let client: URLSessionAPIClient = {
         let configuration = URLSessionConfiguration.api
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -145,6 +153,26 @@ struct URLSessionAPIClientTests {
         } throws: { error in
             guard case APIError.decoding = error else { return false }
             return true
+        }
+    }
+
+    @Test(arguments: [
+        (204, nil as String?, ""),
+        (200, "application/json" as String?, #"{"deleted":true}"#),
+    ])
+    func acceptsEmptyOrJSONBodyForAnEmptyResponse(status: Int, contentType: String?, body: String) async throws {
+        let baseURL = StubURLProtocol.register(status: status, contentType: contentType, body: body)
+
+        let response = try await client.send(DeletePayloadEndpoint(baseURL: baseURL))
+
+        #expect(response == EmptyResponse())
+    }
+
+    @Test func reportsNonJSONBodyForAnEmptyResponseAsOffline() async {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: "text/html", body: "<html>Log in</html>")
+
+        await #expect(throws: APIError.offline) {
+            try await client.send(DeletePayloadEndpoint(baseURL: baseURL))
         }
     }
 
