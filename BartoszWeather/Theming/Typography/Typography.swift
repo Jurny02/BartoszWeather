@@ -11,40 +11,44 @@ nonisolated public enum Typography: CaseIterable, Sendable {
     case metricValue
     case cityTitle
     case heroTemperature
+    case cardCity
+    case cardTemperature
+    case cardCaption
 
     public var size: CGFloat {
         switch self {
         case .largeTitle: 34
         case .cityTitle: 28
         case .heroTemperature: 88
-        case .title: 22
+        case .title, .cardCity: 22
         case .headline, .body: 17
-        case .footnote: 13
+        case .footnote, .cardCaption: 13
         case .caption: 12
         case .metricValue: 26
+        case .cardTemperature: 44
         }
     }
 
     public var weight: Font.Weight {
         switch self {
         case .largeTitle, .title: .bold
-        case .headline: .semibold
+        case .headline, .cardCity: .semibold
         case .body, .footnote: .regular
-        case .caption, .metricValue, .cityTitle: .medium
-        case .heroTemperature: .light
+        case .caption, .metricValue, .cityTitle, .cardCaption: .medium
+        case .heroTemperature, .cardTemperature: .light
         }
     }
 
     public var textStyle: Font.TextStyle {
         switch self {
         case .largeTitle: .largeTitle
-        case .title: .title2
+        case .title, .cardCity: .title2
         case .headline: .headline
         case .body: .body
-        case .footnote: .footnote
+        case .footnote, .cardCaption: .footnote
         case .caption: .caption
         case .metricValue, .cityTitle: .title
-        case .heroTemperature: .largeTitle
+        case .heroTemperature, .cardTemperature: .largeTitle
         }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Turns weather values into the short texts shown on the forecast screen, and into the sentences VoiceOver reads.
+/// Turns weather values into the short texts shown on weather screens, and into the sentences VoiceOver reads.
 ///
 /// Values that do not depend on place are static; times and weekdays are shown in `timeZone`.
 nonisolated public struct WeatherFormatter: Sendable {
