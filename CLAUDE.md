@@ -56,7 +56,9 @@ Feature code stays simple: add an abstraction when a second use or a test needs 
 ## Code style
 
 - English everywhere: code, strings in tests, commits, PRs.
-- No explanatory comments; names carry the meaning. Doc comments only on non-obvious public API.
+- Every protocol, class, struct, enum and actor has a short doc comment (`///`) saying what it is for,
+  test doubles included. Document members whose contract the name cannot carry (errors thrown, preconditions, side effects).
+- No explanatory comments inside function bodies; names carry the meaning.
 - Swift 6 language mode with MainActor default isolation; keep code free of concurrency warnings.
 - No third-party dependencies.
 
