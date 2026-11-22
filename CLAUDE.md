@@ -33,6 +33,19 @@ Modules are folders inside one app target, laid out so they can later become rea
 - Mark API meant to cross module boundaries as `public` now so the module migration stays mechanical.
 - DTOs stay in `Networking`; mapping DTO to domain happens in the feature service layer and is tested.
 
+## Design principles
+
+Follow SOLID:
+
+- **Single responsibility**: each type has one reason to change. Endpoints describe requests, the client sends them, services map DTOs to domain models, view models own screen state.
+- **Open/closed**: extend by adding types, not by editing shared code. A new endpoint, HTTP method, header or body must not require changes to the API client.
+- **Liskov substitution**: every conformance, including fakes, honours the protocol's whole contract, errors and cancellation included.
+- **Interface segregation**: keep protocols small and shaped by the code that consumes them.
+- **Dependency inversion**: depend on protocols; only the composition root knows concrete types.
+
+Shared infrastructure (`Networking`, persistence, `Theming`) must not bake in today's only use case, such as GET-only requests.
+Feature code stays simple: add an abstraction when a second use or a test needs it.
+
 ## Testing
 
 - TDD: write a failing test, make it pass, refactor.
