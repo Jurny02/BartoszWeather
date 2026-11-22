@@ -36,7 +36,7 @@ nonisolated public final class URLSessionAPIClient: APIClient {
             logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
             throw APIError.server(status: response.statusCode, reason: reason)
         }
-        guard data.isEmpty || Self.isJSON(response) else {
+        guard data.isEmpty || endpoint.acceptsResponse(contentType: response.value(forHTTPHeaderField: "Content-Type")) else {
             throw APIError.offline
         }
         do {
@@ -73,16 +73,5 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         default:
             APIError.transport
         }
-    }
-
-    private static func isJSON(_ response: HTTPURLResponse) -> Bool {
-        guard let contentType = response.value(forHTTPHeaderField: "Content-Type") else {
-            return false
-        }
-        let mediaType = contentType
-            .prefix { $0 != ";" }
-            .trimmingCharacters(in: .whitespaces)
-            .lowercased()
-        return mediaType == "application/json" || mediaType.hasSuffix("+json")
     }
 }

@@ -61,6 +61,23 @@ struct URLSessionAPIClientTests {
         let method = HTTPMethod.delete
     }
 
+    /// An endpoint that reads a CSV body instead of JSON.
+    nonisolated struct CSVEndpoint: Endpoint {
+        typealias Response = [String]
+
+        let baseURL: URL
+        let path = "/payload.csv"
+        let headers = ["Accept": "text/csv"]
+
+        func acceptsResponse(contentType: String?) -> Bool {
+            contentType?.hasPrefix("text/csv") ?? false
+        }
+
+        func decode(_ data: Data) throws -> [String] {
+            String(decoding: data, as: UTF8.self).split(separator: ",").map(String.init)
+        }
+    }
+
     private let client: URLSessionAPIClient = {
         let configuration = URLSessionConfiguration.api
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -180,6 +197,22 @@ struct URLSessionAPIClientTests {
 
         await #expect(throws: APIError.offline) {
             try await client.send(DeletePayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func decodesANonJSONBodyTheEndpointAccepts() async throws {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: "text/csv; charset=utf-8", body: "Kraków,Gdańsk")
+
+        let cities = try await client.send(CSVEndpoint(baseURL: baseURL))
+
+        #expect(cities == ["Kraków", "Gdańsk"])
+    }
+
+    @Test func reportsABodyTheEndpointDoesNotAcceptAsOffline() async {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: "text/html", body: "<html>Log in</html>")
+
+        await #expect(throws: APIError.offline) {
+            try await client.send(CSVEndpoint(baseURL: baseURL))
         }
     }
 
