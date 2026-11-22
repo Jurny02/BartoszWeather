@@ -27,7 +27,6 @@ nonisolated public struct Forecast: Hashable, Sendable {
 
     /// Up to `count` hours, starting with the hour that contains `date`.
     public func hours(from date: Date, count: Int) -> [HourlyForecast] {
-        let hourLength: TimeInterval = 3600
-        return Array(hourly.lazy.filter { $0.date.addingTimeInterval(hourLength) > date }.prefix(max(count, 0)))
+        Array(hourly.lazy.filter { $0.contains(date) || $0.date > date }.prefix(max(count, 0)))
     }
 }

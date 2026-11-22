@@ -57,7 +57,7 @@ struct ForecastView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: Spacing.xSmall) {
                     ForEach(hours) { hour in
-                        HourlyCell(hour: hour, isNow: hour.id == hours.first?.id)
+                        HourlyCell(hour: hour, isNow: hour.contains(now))
                     }
                 }
             }
