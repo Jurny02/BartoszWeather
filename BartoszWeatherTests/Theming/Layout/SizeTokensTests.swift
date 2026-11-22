@@ -7,4 +7,8 @@ struct SizeTokensTests {
         #expect(Size.buttonHeight == 48)
         #expect(Size.buttonMinWidth == 144)
     }
+
+    @Test func stateIconMatchesFigmaStateView() {
+        #expect(Size.stateIcon == 48)
+    }
 }
