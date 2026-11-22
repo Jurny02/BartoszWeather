@@ -11,6 +11,8 @@ struct TypographyTests {
         (.footnote, 13, .regular),
         (.caption, 12, .medium),
         (.metricValue, 26, .medium),
+        (.cityTitle, 28, .medium),
+        (.heroTemperature, 88, .light),
     ])
     func matchesFigmaTypeScale(style: Typography, size: CGFloat, weight: Font.Weight) {
         #expect(style.size == size)
@@ -25,6 +27,8 @@ struct TypographyTests {
         (.footnote, .footnote),
         (.caption, .caption),
         (.metricValue, .title),
+        (.cityTitle, .title),
+        (.heroTemperature, .largeTitle),
     ])
     func scalesWithMatchingDynamicTypeStyle(style: Typography, textStyle: Font.TextStyle) {
         #expect(style.textStyle == textStyle)
