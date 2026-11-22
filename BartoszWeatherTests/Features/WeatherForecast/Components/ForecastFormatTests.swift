@@ -17,8 +17,18 @@ struct ForecastFormatTests {
         #expect(ForecastFormat.temperature(nil) == "—")
     }
 
+    @Test(arguments: [Double.nan, .infinity, -.infinity, 1e300])
+    func showsPlaceholderForImplausibleTemperature(value: Double) {
+        #expect(ForecastFormat.temperature(value) == "—")
+    }
+
     @Test func formatsPercentage() {
         #expect(ForecastFormat.percentage(20) == "20%")
         #expect(ForecastFormat.percentage(nil) == "—")
+    }
+
+    @Test func clampsPercentageToZeroThroughHundred() {
+        #expect(ForecastFormat.percentage(-5) == "0%")
+        #expect(ForecastFormat.percentage(120) == "100%")
     }
 }
