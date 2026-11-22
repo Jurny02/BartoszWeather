@@ -90,7 +90,16 @@ struct URLSessionAPIClientTests {
         }
     }
 
-    @Test(arguments: ["text/html", nil])
+    @Test(arguments: ["application/geo+json", "application/problem+json; charset=utf-8", "Application/JSON"])
+    func decodesAnyJSONMediaType(contentType: String) async throws {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: contentType, body: #"{"value":"Kraków"}"#)
+
+        let payload = try await client.send(PayloadEndpoint(baseURL: baseURL))
+
+        #expect(payload == Payload(value: "Kraków"))
+    }
+
+    @Test(arguments: ["text/html", "text/plain; charset=utf-8", "application/jsonp", "", nil])
     func reportsNonJSONPageAsOfflineBecauseItComesFromACaptivePortal(contentType: String?) async {
         let baseURL = StubURLProtocol.register(
             status: 200,

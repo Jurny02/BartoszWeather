@@ -76,8 +76,13 @@ nonisolated public final class URLSessionAPIClient: APIClient {
     }
 
     private static func isJSON(_ response: HTTPURLResponse) -> Bool {
-        response.value(forHTTPHeaderField: "Content-Type")?
+        guard let contentType = response.value(forHTTPHeaderField: "Content-Type") else {
+            return false
+        }
+        let mediaType = contentType
+            .prefix { $0 != ";" }
+            .trimmingCharacters(in: .whitespaces)
             .lowercased()
-            .contains("application/json") ?? false
+        return mediaType == "application/json" || mediaType.hasSuffix("+json")
     }
 }
