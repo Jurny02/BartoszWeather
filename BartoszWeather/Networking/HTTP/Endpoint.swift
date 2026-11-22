@@ -3,20 +3,26 @@ import Foundation
 /// An HTTP request to a JSON API and the type its successful response decodes to.
 ///
 /// Requests default to GET without a body; endpoints override `method`, `headers` and `body` as needed.
-///
-/// `path` must start with `/`. Query values are always percent-encoded, so user input
-/// can neither add parameters nor change the path.
+/// Query values are always percent-encoded, so user input can neither add parameters nor change the path.
 nonisolated public protocol Endpoint: Sendable {
+    /// The type a successful response decodes to.
     associatedtype Response: Decodable & Sendable
 
     var baseURL: URL { get }
+    /// The path appended to `baseURL`. It must start with `/`.
     var path: String { get }
     var queryItems: [URLQueryItem] { get }
     var method: HTTPMethod { get }
+    /// Extra header fields. They override the defaults, such as `Accept: application/json`.
     var headers: [String: String] { get }
+    /// The request body. Any `APIError` thrown here fails the request before it is sent, unchanged.
     var body: HTTPBody? { get throws(APIError) }
 
+    /// Decodes a successful response whose body is empty or JSON.
+    ///
+    /// A thrown `CancellationError` reaches the caller unchanged; any other error becomes `APIError.decoding`.
     func decode(_ data: Data) throws -> Response
+    /// Reads the server's explanation from the body of a failed response, for logs only.
     func errorReason(from data: Data) -> String?
 }
 
@@ -34,6 +40,10 @@ nonisolated extension Endpoint {
         nil
     }
 
+    /// Builds the `URLRequest`.
+    ///
+    /// Throws `APIError.invalidRequest` when `path` does not start with `/` or the URL cannot be built,
+    /// and rethrows any error from `body`.
     public func makeRequest() throws(APIError) -> URLRequest {
         guard path.hasPrefix("/"),
               var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {

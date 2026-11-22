@@ -3,11 +3,14 @@ import os
 import Testing
 @testable import BartoszWeather
 
+/// Tests sending, response validation, decoding and error mapping of the URLSession client.
 struct URLSessionAPIClientTests {
+    /// A minimal JSON body sent and received by the test endpoints.
     nonisolated struct Payload: Codable, Equatable, Sendable {
         let value: String
     }
 
+    /// A GET endpoint that reports the whole error body as its reason.
     nonisolated struct PayloadEndpoint: Endpoint {
         typealias Response = Payload
 
@@ -19,6 +22,7 @@ struct URLSessionAPIClientTests {
         }
     }
 
+    /// A GET endpoint with the default error reason, which is none.
     nonisolated struct PlainEndpoint: Endpoint {
         typealias Response = Payload
 
@@ -26,6 +30,7 @@ struct URLSessionAPIClientTests {
         let path = "/payload"
     }
 
+    /// A PUT endpoint with a body, to check what reaches the server.
     nonisolated struct UpdatePayloadEndpoint: Endpoint {
         typealias Response = Payload
 
@@ -35,6 +40,7 @@ struct URLSessionAPIClientTests {
         let body: HTTPBody?
     }
 
+    /// An endpoint whose decoder throws `CancellationError`, to check that cancellation survives decoding.
     nonisolated struct CancellingDecoderEndpoint: Endpoint {
         typealias Response = Payload
 
@@ -46,6 +52,7 @@ struct URLSessionAPIClientTests {
         }
     }
 
+    /// A DELETE endpoint that expects no content.
     nonisolated struct DeletePayloadEndpoint: Endpoint {
         typealias Response = EmptyResponse
 

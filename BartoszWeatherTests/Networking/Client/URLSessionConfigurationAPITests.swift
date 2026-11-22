@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import BartoszWeather
 
+/// Tests the session settings the API client uses by default.
 struct URLSessionConfigurationAPITests {
     private let configuration = URLSessionConfiguration.api
 

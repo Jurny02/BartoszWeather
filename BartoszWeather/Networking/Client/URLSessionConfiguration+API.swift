@@ -2,6 +2,8 @@ import Foundation
 
 nonisolated extension URLSessionConfiguration {
     /// An ephemeral configuration that fails fast when offline and keeps no cookies or cache.
+    ///
+    /// Each access returns a new instance, so callers can adjust it safely.
     public static var api: URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 15

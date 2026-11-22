@@ -2,7 +2,9 @@ import Foundation
 import Testing
 @testable import BartoszWeather
 
+/// Tests reading Open-Meteo error reasons, directly and through the client.
 struct OpenMeteoEndpointTests {
+    /// An Open-Meteo endpoint with the default error reason parsing.
     nonisolated struct ForecastStub: OpenMeteoEndpoint {
         typealias Response = [String: Double]
 

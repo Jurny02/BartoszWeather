@@ -11,6 +11,7 @@ nonisolated extension OpenMeteoEndpoint {
     }
 }
 
+/// The error body Open-Meteo returns with a failed request.
 nonisolated struct OpenMeteoErrorDTO: Decodable, Sendable {
     let reason: String?
 }

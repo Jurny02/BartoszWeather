@@ -1,3 +1,6 @@
+/// The method of an HTTP request.
+///
+/// A struct rather than an enum, so a method without a predefined constant can still be used.
 nonisolated public struct HTTPMethod: RawRepresentable, Hashable, Sendable {
     public static let get = HTTPMethod(rawValue: "GET")
     public static let post = HTTPMethod(rawValue: "POST")

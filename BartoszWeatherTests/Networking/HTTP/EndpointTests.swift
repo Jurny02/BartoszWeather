@@ -2,7 +2,9 @@ import Foundation
 import Testing
 @testable import BartoszWeather
 
+/// Tests building a `URLRequest` from an endpoint.
 struct EndpointTests {
+    /// A GET endpoint that relies on the defaults for method, headers and body.
     nonisolated struct SearchEndpoint: Endpoint {
         typealias Response = [String]
 
@@ -11,6 +13,7 @@ struct EndpointTests {
         var queryItems: [URLQueryItem] = []
     }
 
+    /// An endpoint with a configurable method, headers and body.
     nonisolated struct FavoriteEndpoint: Endpoint {
         typealias Response = [String]
 
@@ -21,16 +24,19 @@ struct EndpointTests {
         var body: HTTPBody?
     }
 
+    /// A value encoded as a JSON request body.
     nonisolated struct Favorite: Encodable {
         let cityID: Int
     }
 
+    /// A value whose encoding always fails.
     nonisolated struct UnencodableValue: Encodable {
         func encode(to encoder: any Encoder) throws {
             throw EncodingError.invalidValue(self, .init(codingPath: [], debugDescription: "Unencodable"))
         }
     }
 
+    /// An endpoint whose body getter throws because its value cannot be encoded.
     nonisolated struct UnencodableBodyEndpoint: Endpoint {
         typealias Response = [String]
 

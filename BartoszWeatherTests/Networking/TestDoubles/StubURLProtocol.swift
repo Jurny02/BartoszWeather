@@ -1,6 +1,7 @@
 import Foundation
 import os
 
+/// Answers requests from handlers registered per host, so tests run in parallel without the network.
 nonisolated final class StubURLProtocol: URLProtocol {
     typealias Handler = @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
 
@@ -55,6 +56,7 @@ nonisolated final class StubURLProtocol: URLProtocol {
 }
 
 nonisolated extension URLRequest {
+    /// The body as `URLProtocol` sees it: `httpBody` is moved into `httpBodyStream` before loading.
     var bodyData: Data? {
         if let httpBody {
             return httpBody
