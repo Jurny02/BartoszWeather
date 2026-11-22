@@ -1,9 +1,10 @@
 import Foundation
+import os
 import Testing
 @testable import BartoszWeather
 
 struct URLSessionAPIClientTests {
-    nonisolated struct Payload: Decodable, Equatable, Sendable {
+    nonisolated struct Payload: Codable, Equatable, Sendable {
         let value: String
     }
 
@@ -25,6 +26,15 @@ struct URLSessionAPIClientTests {
         let path = "/payload"
     }
 
+    nonisolated struct UpdatePayloadEndpoint: Endpoint {
+        typealias Response = Payload
+
+        let baseURL: URL
+        let path = "/payload"
+        let method = HTTPMethod.put
+        let body: HTTPBody?
+    }
+
     nonisolated struct CancellingDecoderEndpoint: Endpoint {
         typealias Response = Payload
 
@@ -41,6 +51,21 @@ struct URLSessionAPIClientTests {
         configuration.protocolClasses = [StubURLProtocol.self]
         return URLSessionAPIClient(configuration: configuration)
     }()
+
+    @Test func sendsTheEndpointMethodAndBody() async throws {
+        let received = OSAllocatedUnfairLock<(method: String?, body: Data?)>(initialState: (nil, nil))
+        let baseURL = StubURLProtocol.register { request in
+            received.withLock { $0 = (request.httpMethod, request.bodyData) }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+            return (response, Data(#"{"value":"Kraków"}"#.utf8))
+        }
+
+        _ = try await client.send(UpdatePayloadEndpoint(baseURL: baseURL, body: .json(Payload(value: "Kraków"))))
+
+        let (method, body) = received.withLock { $0 }
+        #expect(method == "PUT")
+        #expect(body == Data(#"{"value":"Kraków"}"#.utf8))
+    }
 
     @Test func decodesSuccessfulJSONResponse() async throws {
         let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)

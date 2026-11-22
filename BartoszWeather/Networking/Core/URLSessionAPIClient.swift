@@ -25,15 +25,15 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         guard let response = response as? HTTPURLResponse else {
             throw APIError.transport
         }
-        logger.debug("GET \(endpoint.path, privacy: .public) \(response.statusCode) in \(start.duration(to: .now), privacy: .public)")
+        logger.debug("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) \(response.statusCode) in \(start.duration(to: .now), privacy: .public)")
 
         guard data.count <= Self.maxResponseSize else {
-            logger.error("GET \(endpoint.path, privacy: .public) returned \(data.count) bytes")
+            logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) returned \(data.count) bytes")
             throw APIError.transport
         }
         guard (200..<300).contains(response.statusCode) else {
             let reason = endpoint.errorReason(from: data)
-            logger.error("GET \(endpoint.path, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
+            logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
             throw APIError.server(status: response.statusCode, reason: reason)
         }
         guard data.isEmpty || Self.isJSON(response) else {
@@ -44,7 +44,7 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            logger.error("GET \(endpoint.path, privacy: .public) decoding failed: \(error, privacy: .private)")
+            logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) decoding failed: \(error, privacy: .private)")
             throw APIError.decoding(description: String(describing: error))
         }
     }

@@ -1,6 +1,8 @@
 import Foundation
 
-/// A GET request to a JSON API and the type its successful response decodes to.
+/// An HTTP request to a JSON API and the type its successful response decodes to.
+///
+/// Requests default to GET without a body; endpoints override `method`, `headers` and `body` as needed.
 ///
 /// `path` must start with `/`. Query values are always percent-encoded, so user input
 /// can neither add parameters nor change the path.
@@ -10,6 +12,9 @@ nonisolated public protocol Endpoint: Sendable {
     var baseURL: URL { get }
     var path: String { get }
     var queryItems: [URLQueryItem] { get }
+    var method: HTTPMethod { get }
+    var headers: [String: String] { get }
+    var body: HTTPBody? { get throws(APIError) }
 
     func decode(_ data: Data) throws -> Response
     func errorReason(from data: Data) -> String?
@@ -17,6 +22,9 @@ nonisolated public protocol Endpoint: Sendable {
 
 nonisolated extension Endpoint {
     public var queryItems: [URLQueryItem] { [] }
+    public var method: HTTPMethod { .get }
+    public var headers: [String: String] { [:] }
+    public var body: HTTPBody? { nil }
 
     public func decode(_ data: Data) throws -> Response {
         try JSONDecoder().decode(Response.self, from: data)
@@ -44,8 +52,15 @@ nonisolated extension Endpoint {
             throw .invalidRequest
         }
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let body = try body {
+            request.httpBody = body.data
+            request.setValue(body.contentType, forHTTPHeaderField: "Content-Type")
+        }
+        for (field, value) in headers {
+            request.setValue(value, forHTTPHeaderField: field)
+        }
         return request
     }
 }
