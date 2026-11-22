@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct TemperatureRangeBar: View {
+    @Environment(\.weatherAppearance) private var appearance
     private let segment: ClosedRange<Double>
     @ScaledMetric(relativeTo: .body) private var maximumWidth: CGFloat = 64
     private let minimumWidth: CGFloat = 24
     private let height: CGFloat = 4
+    private let trackOpacity = 0.25
 
     init(low: Double, high: Double, bounds: ClosedRange<Double>?) {
         segment = Self.segment(low: low, high: high, bounds: bounds)
@@ -20,11 +22,11 @@ struct TemperatureRangeBar: View {
 
     var body: some View {
         Capsule()
-            .fill(Color(.separatorLine))
+            .fill(Color(appearance.secondaryText).opacity(trackOpacity))
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Capsule()
-                        .fill(Color(.accent))
+                        .fill(Color(appearance.accent))
                         .frame(width: proxy.size.width * (segment.upperBound - segment.lowerBound))
                         .offset(x: proxy.size.width * segment.lowerBound)
                 }

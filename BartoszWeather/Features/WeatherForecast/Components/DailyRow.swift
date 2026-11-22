@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DailyRow: View {
+    @Environment(\.weatherAppearance) private var appearance
     private let day: String
     private let icon: Icon
     private let precipitationChance: Int?
@@ -64,18 +65,18 @@ struct DailyRow: View {
         layout {
             Text(day)
                 .typography(.body)
-                .foregroundStyle(Color(.Weather.text))
+                .foregroundStyle(Color(appearance.text))
                 .frame(maxWidth: isStacked ? .infinity : nil, alignment: .leading)
                 .layoutPriority(1)
             HStack(spacing: Spacing.small) {
                 WeatherSymbol(icon: icon, size: symbolSize, relativeTo: .body)
                 Text(displayedPrecipitation)
                     .typography(.caption)
-                    .foregroundStyle(Color(.accent))
+                    .foregroundStyle(Color(appearance.accent))
                     .fixedSize(horizontal: !isStacked, vertical: false)
                 Text(displayedLow)
                     .typography(.body)
-                    .foregroundStyle(Color(.Weather.secondary))
+                    .foregroundStyle(Color(appearance.secondaryText))
                     .frame(minWidth: isStacked ? nil : temperatureWidth, alignment: .trailing)
                     .fixedSize(horizontal: !isStacked, vertical: false)
                 if !isStacked {
@@ -83,7 +84,7 @@ struct DailyRow: View {
                 }
                 Text(displayedHigh)
                     .typography(.body)
-                    .foregroundStyle(Color(.Weather.text))
+                    .foregroundStyle(Color(appearance.text))
                     .frame(minWidth: isStacked ? nil : temperatureWidth, alignment: .leading)
                     .fixedSize(horizontal: !isStacked, vertical: false)
             }
@@ -118,12 +119,19 @@ struct DailyRow: View {
         .preferredColorScheme(.dark)
 }
 
+#Preview("Night") {
+    DailyRowPreview()
+        .environment(\.weatherAppearance, .night)
+}
+
 #Preview("Large Dynamic Type") {
     DailyRowPreview()
         .dynamicTypeSize(.accessibility3)
 }
 
 private struct DailyRowPreview: View {
+    @Environment(\.weatherAppearance) private var appearance
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -139,9 +147,9 @@ private struct DailyRowPreview: View {
                 DailyRow(day: "Tuesday", icon: .cloudSunFill, precipitationChance: nil, low: nil, high: nil)
             }
             .padding(.horizontal, Spacing.medium)
-            .background(Color(.Weather.card), in: .rect(cornerRadius: Radius.large))
+            .background(Color(appearance.card), in: .rect(cornerRadius: Radius.large))
             .padding(Spacing.large)
         }
-        .background(Color(.background))
+        .background(Color(appearance == .night ? .Weather.Clear.nightStart : .background))
     }
 }

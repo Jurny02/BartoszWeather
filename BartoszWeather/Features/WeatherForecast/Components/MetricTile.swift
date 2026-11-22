@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MetricTile: View {
+    @Environment(\.weatherAppearance) private var appearance
     private let icon: Icon
     private let title: String
     private let accessibilityTitle: String
@@ -52,19 +53,19 @@ struct MetricTile: View {
             heading
             Text(displayedValue)
                 .typography(.metricValue)
-                .foregroundStyle(Color(isHighlighted ? .Wind.strongValue : .Weather.text))
+                .foregroundStyle(Color(isHighlighted ? appearance.highlight : appearance.text))
             Text(displayedCaption)
                 .typography(.caption)
-                .foregroundStyle(Color(.Weather.secondary))
+                .foregroundStyle(Color(appearance.secondaryText))
         }
         .padding(.horizontal, Spacing.medium)
         .padding(.vertical, Spacing.small)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.Weather.card), in: .rect(cornerRadius: Radius.large))
+        .background(Color(appearance.card), in: .rect(cornerRadius: Radius.large))
         .overlay {
             if isHighlighted {
                 RoundedRectangle(cornerRadius: Radius.large)
-                    .strokeBorder(Color(.Wind.strongValue), lineWidth: highlightBorderWidth)
+                    .strokeBorder(Color(appearance.highlight), lineWidth: highlightBorderWidth)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -89,7 +90,7 @@ struct MetricTile: View {
                     .typography(.caption)
             }
         }
-        .foregroundStyle(Color(.Weather.secondary))
+        .foregroundStyle(Color(appearance.secondaryText))
     }
 }
 
@@ -103,12 +104,19 @@ struct MetricTile: View {
         .preferredColorScheme(.dark)
 }
 
+#Preview("Night") {
+    MetricTilePreview()
+        .environment(\.weatherAppearance, .night)
+}
+
 #Preview("Large Dynamic Type") {
     MetricTilePreview()
         .dynamicTypeSize(.accessibility3)
 }
 
 private struct MetricTilePreview: View {
+    @Environment(\.weatherAppearance) private var appearance
+
     private let columns = [GridItem(.flexible(), spacing: Spacing.small), GridItem(.flexible())]
 
     var body: some View {
@@ -137,6 +145,6 @@ private struct MetricTilePreview: View {
             }
             .padding(Spacing.large)
         }
-        .background(Color(.background))
+        .background(Color(appearance == .night ? .Weather.Clear.nightStart : .background))
     }
 }

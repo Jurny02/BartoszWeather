@@ -3,6 +3,7 @@ import SwiftUI
 struct HourlyCell: View {
     static let minimumVisiblePrecipitationChance = 10
 
+    @Environment(\.weatherAppearance) private var appearance
     private let time: String
     private let icon: Icon
     private let temperature: Double?
@@ -46,20 +47,20 @@ struct HourlyCell: View {
         VStack(spacing: Spacing.xSmall) {
             Text(time)
                 .typography(.footnote)
-                .foregroundStyle(Color(.Weather.text))
+                .foregroundStyle(Color(appearance.text))
             WeatherSymbol(icon: icon, size: symbolSize, relativeTo: .headline)
             Text(displayedTemperature)
                 .typography(.headline)
-                .foregroundStyle(Color(.Weather.text))
+                .foregroundStyle(Color(appearance.text))
             Text(displayedPrecipitation ?? " ")
                 .typography(.caption)
-                .foregroundStyle(Color(.accent))
+                .foregroundStyle(Color(appearance.accent))
         }
         .lineLimit(1)
         .padding(.vertical, Spacing.xSmall)
         .frame(minWidth: minimumWidth)
         .background(
-            isHighlighted ? Color(.Surface.selected) : .clear,
+            isHighlighted ? Color(appearance.selection) : .clear,
             in: .rect(cornerRadius: Radius.medium)
         )
         .accessibilityElement(children: .ignore)
@@ -77,12 +78,19 @@ struct HourlyCell: View {
         .preferredColorScheme(.dark)
 }
 
+#Preview("Night") {
+    HourlyCellPreview()
+        .environment(\.weatherAppearance, .night)
+}
+
 #Preview("Large Dynamic Type") {
     HourlyCellPreview()
         .dynamicTypeSize(.accessibility3)
 }
 
 private struct HourlyCellPreview: View {
+    @Environment(\.weatherAppearance) private var appearance
+
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: Spacing.xSmall) {
@@ -92,9 +100,9 @@ private struct HourlyCellPreview: View {
                 HourlyCell(time: "17:00", icon: .cloudSunFill, temperature: nil, precipitationChance: nil)
             }
             .padding(Spacing.medium)
-            .background(Color(.Weather.card), in: .rect(cornerRadius: Radius.large))
+            .background(Color(appearance.card), in: .rect(cornerRadius: Radius.large))
             .padding(Spacing.large)
         }
-        .background(Color(.background))
+        .background(Color(appearance == .night ? .Weather.Clear.nightStart : .background))
     }
 }

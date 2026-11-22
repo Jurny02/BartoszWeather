@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WeatherSymbol: View {
+    @Environment(\.weatherAppearance) private var appearance
     private let icon: Icon
     @ScaledMetric private var size: CGFloat
 
@@ -13,7 +14,7 @@ struct WeatherSymbol: View {
         Image(icon: icon)
             .resizable()
             .symbolRenderingMode(.palette)
-            .foregroundStyle(Color(.Weather.text), Color(.Weather.sun))
+            .foregroundStyle(Color(appearance.text), Color(appearance.symbolAccent))
             .scaledToFit()
             .frame(width: size, height: size)
             .accessibilityHidden(true)
