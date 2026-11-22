@@ -27,10 +27,6 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         }
         logger.debug("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) \(response.statusCode) in \(start.duration(to: .now), privacy: .public)")
 
-        guard data.count <= Self.maxResponseSize else {
-            logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) returned \(data.count) bytes")
-            throw APIError.transport
-        }
         guard (200..<300).contains(response.statusCode) else {
             let reason = endpoint.errorReason(from: data)
             logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
@@ -51,7 +47,20 @@ nonisolated public final class URLSessionAPIClient: APIClient {
 
     private func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         do {
-            return try await session.data(for: request)
+            let (bytes, response) = try await session.bytes(for: request)
+            guard response.expectedContentLength <= Self.maxResponseSize else {
+                throw responseTooLarge(bytes, for: request)
+            }
+            var data = Data()
+            for try await byte in bytes {
+                guard data.count < Self.maxResponseSize else {
+                    throw responseTooLarge(bytes, for: request)
+                }
+                data.append(byte)
+            }
+            return (data, response)
+        } catch let error as APIError {
+            throw error
         } catch let error as URLError {
             throw Self.mapped(error)
         } catch is CancellationError {
@@ -59,6 +68,12 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         } catch {
             throw APIError.transport
         }
+    }
+
+    private func responseTooLarge(_ bytes: URLSession.AsyncBytes, for request: URLRequest) -> APIError {
+        bytes.task.cancel()
+        logger.error("\(request.httpMethod ?? "", privacy: .public) \(request.url?.path() ?? "", privacy: .public) exceeded \(Self.maxResponseSize) bytes")
+        return .transport
     }
 
     private static func mapped(_ error: URLError) -> any Error {

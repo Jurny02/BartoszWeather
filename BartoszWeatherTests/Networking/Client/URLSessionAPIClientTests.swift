@@ -240,6 +240,45 @@ struct URLSessionAPIClientTests {
         #expect(response == EmptyResponse())
     }
 
+    @Test func rejectsDeclaredContentLengthOverTheSizeCapBeforeReadingTheBody() async {
+        let baseURL = StubURLProtocol.register { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Type": "application/json",
+                    "Content-Length": String(URLSessionAPIClient.maxResponseSize + 1),
+                ]
+            )!
+            return (response, Data(#"{"value":"Kraków"}"#.utf8))
+        }
+
+        await #expect(throws: APIError.transport) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func acceptsResponseOfExactlyTheSizeCap() async throws {
+        let wrapper = #"{"value":""#.count + #""}"#.count
+        let value = String(repeating: "a", count: URLSessionAPIClient.maxResponseSize - wrapper)
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":""# + value + #""}"#)
+
+        let payload = try await client.send(PayloadEndpoint(baseURL: baseURL))
+
+        #expect(payload == Payload(value: value))
+    }
+
+    @Test func rejectsResponseOneByteOverTheSizeCap() async {
+        let wrapper = #"{"value":""#.count + #""}"#.count
+        let value = String(repeating: "a", count: URLSessionAPIClient.maxResponseSize - wrapper + 1)
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":""# + value + #""}"#)
+
+        await #expect(throws: APIError.transport) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
     @Test func rejectsResponseLargerThanTheSizeCap() async {
         let body = #"{"value":""# + String(repeating: "a", count: URLSessionAPIClient.maxResponseSize) + #""}"#
         let baseURL = StubURLProtocol.register(status: 200, body: body)
