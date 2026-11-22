@@ -4,7 +4,7 @@ import os
 /// Sends endpoints over `URLSession` and reports every failure as `APIError`,
 /// except cancellation, which is rethrown as `CancellationError`.
 nonisolated public final class URLSessionAPIClient: APIClient {
-    public static let maxResponseSize = 1_048_576
+    static let maxResponseSize = 1_048_576
 
     private let session: URLSession
     private let logger = Logger(subsystem: "com.jurny02.BartoszWeather", category: "Networking")
