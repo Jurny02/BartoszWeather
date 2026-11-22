@@ -26,10 +26,10 @@ Launch one `general-purpose` subagent with the prompt below. Do not pass it your
 > You are reviewing branch `<branch>` of an iOS SwiftUI app before it is pushed. Read `CLAUDE.md` first: it defines the architecture, testing and git rules. Then inspect `git log --format='%h %s%n%b' origin/main..HEAD` and `git diff origin/main...HEAD`, opening full files where context is needed.
 >
 > Report only real problems, each with file:line, what is wrong, and a concrete fix. Check:
-> 1. Correctness: bugs, edge cases, wrong error handling, concurrency or actor-isolation issues, force unwraps on external data. For project configuration: build settings, scheme, test target hosting.
-> 2. Architecture: MVVM-C roles respected, folder dependency rules (Features → Core/Networking/Theming, Networking → Core, Theming → Core, no feature-to-feature imports), dependencies injected rather than created inline.
+> 1. Correctness: bugs, edge cases, wrong error handling, concurrency or actor-isolation issues, force unwraps on external data. For project configuration: build settings, scheme, test target hosting. For doc comments: does each one state accurately what the code does?
+> 2. Architecture: MVVM-C roles respected, folder dependency rules (Features → Core/Networking/Theming, Networking → Core, Theming → Core, no feature-to-feature imports), dependencies injected rather than created inline, and the SOLID rules in `CLAUDE.md` (for example, shared infrastructure that assumes a single use case such as GET-only requests).
 > 3. Tests: new behavior covered with Swift Testing, meaningful assertions, no network or timing flakiness, test folders mirror sources.
-> 4. Conventions: English only, no explanatory or leftover comments, no debug prints, no dead code, naming.
+> 4. Conventions: English only, every type (protocol, class, struct, enum, actor) has a doc comment, no explanatory or leftover comments inside function bodies, no debug prints, no dead code, naming.
 > 5. History: every commit follows `type(scope): subject` and is one coherent change. Commits in `git log origin/<branch>..HEAD` are unpushed (all of them if the branch has no upstream yet): none of them may patch an earlier unpushed commit, because such fixes must be folded in. Commits already pushed are published history, so a later focused commit that addresses a review finding on them is expected, not a defect.
 > 6. UI (if the diff touches views): uses Theming tokens instead of literals, supports Dark Mode and Dynamic Type, has accessibility labels where needed.
 >

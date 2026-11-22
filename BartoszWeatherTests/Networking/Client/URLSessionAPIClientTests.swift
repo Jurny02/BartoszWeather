@@ -1,0 +1,338 @@
+import Foundation
+import os
+import Testing
+@testable import BartoszWeather
+
+/// Tests sending, response validation, decoding and error mapping of the URLSession client.
+struct URLSessionAPIClientTests {
+    /// A minimal JSON body sent and received by the test endpoints.
+    nonisolated struct Payload: Codable, Equatable, Sendable {
+        let value: String
+    }
+
+    /// A GET endpoint that reports the whole error body as its reason.
+    nonisolated struct PayloadEndpoint: Endpoint {
+        typealias Response = Payload
+
+        let baseURL: URL
+        let path = "/payload"
+
+        func errorReason(from data: Data) -> String? {
+            String(decoding: data, as: UTF8.self)
+        }
+    }
+
+    /// A GET endpoint with the default error reason, which is none.
+    nonisolated struct PlainEndpoint: Endpoint {
+        typealias Response = Payload
+
+        let baseURL: URL
+        let path = "/payload"
+    }
+
+    /// A PUT endpoint with a body, to check what reaches the server.
+    nonisolated struct UpdatePayloadEndpoint: Endpoint {
+        typealias Response = Payload
+
+        let baseURL: URL
+        let path = "/payload"
+        let method = HTTPMethod.put
+        let body: HTTPBody?
+    }
+
+    /// An endpoint whose decoder throws `CancellationError`, to check that cancellation survives decoding.
+    nonisolated struct CancellingDecoderEndpoint: Endpoint {
+        typealias Response = Payload
+
+        let baseURL: URL
+        let path = "/payload"
+
+        func decode(_ data: Data) throws -> Payload {
+            throw CancellationError()
+        }
+    }
+
+    /// A DELETE endpoint that expects no content.
+    nonisolated struct DeletePayloadEndpoint: Endpoint {
+        typealias Response = EmptyResponse
+
+        let baseURL: URL
+        let path = "/payload"
+        let method = HTTPMethod.delete
+    }
+
+    /// An endpoint that reads a CSV body instead of JSON.
+    nonisolated struct CSVEndpoint: Endpoint {
+        typealias Response = [String]
+
+        let baseURL: URL
+        let path = "/payload.csv"
+        let headers = ["Accept": "text/csv"]
+
+        func acceptsResponse(contentType: String?) -> Bool {
+            contentType?.hasPrefix("text/csv") ?? false
+        }
+
+        func decode(_ data: Data) throws -> [String] {
+            String(decoding: data, as: UTF8.self).split(separator: ",").map(String.init)
+        }
+    }
+
+    /// An endpoint generic over its response, so `EmptyResponse` reaches the unconstrained default decoder.
+    nonisolated struct GenericEndpoint<Value: Decodable & Sendable>: Endpoint {
+        typealias Response = Value
+
+        let baseURL: URL
+        let path = "/payload"
+    }
+
+    private let client: URLSessionAPIClient = {
+        let configuration = URLSessionConfiguration.api
+        configuration.protocolClasses = [StubURLProtocol.self]
+        return URLSessionAPIClient(configuration: configuration)
+    }()
+
+    @Test func sendsTheEndpointMethodAndBody() async throws {
+        let received = OSAllocatedUnfairLock<(method: String?, body: Data?)>(initialState: (nil, nil))
+        let baseURL = StubURLProtocol.register { request in
+            received.withLock { $0 = (request.httpMethod, request.bodyData) }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+            return (response, Data(#"{"value":"Kraków"}"#.utf8))
+        }
+
+        _ = try await client.send(UpdatePayloadEndpoint(baseURL: baseURL, body: .json(Payload(value: "Kraków"))))
+
+        let (method, body) = received.withLock { $0 }
+        #expect(method == "PUT")
+        #expect(body == Data(#"{"value":"Kraków"}"#.utf8))
+    }
+
+    @Test func decodesSuccessfulJSONResponse() async throws {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)
+
+        let payload = try await client.send(PayloadEndpoint(baseURL: baseURL))
+
+        #expect(payload == Payload(value: "Kraków"))
+    }
+
+    @Test func acceptsJSONContentTypeWithCharset() async throws {
+        let baseURL = StubURLProtocol.register(
+            status: 200,
+            contentType: "application/json; charset=utf-8",
+            body: #"{"value":"Gdańsk"}"#
+        )
+
+        let payload = try await client.send(PayloadEndpoint(baseURL: baseURL))
+
+        #expect(payload == Payload(value: "Gdańsk"))
+    }
+
+    @Test(arguments: [400, 404, 429, 500, 503])
+    func reportsServerErrorWithReason(status: Int) async {
+        let baseURL = StubURLProtocol.register(status: status, body: "The service is overloaded")
+
+        await #expect(throws: APIError.server(status: status, reason: "The service is overloaded")) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func reportsServerErrorWithoutReasonByDefault() async {
+        let baseURL = StubURLProtocol.register(status: 500, body: "Internal Server Error")
+
+        await #expect(throws: APIError.server(status: 500, reason: nil)) {
+            try await client.send(PlainEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func reportsInvalidJSONAsDecodingError() async {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"#)
+
+        await #expect {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        } throws: { error in
+            guard case APIError.decoding = error else { return false }
+            return true
+        }
+    }
+
+    @Test(arguments: ["application/geo+json", "application/problem+json; charset=utf-8", "Application/JSON"])
+    func decodesAnyJSONMediaType(contentType: String) async throws {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: contentType, body: #"{"value":"Kraków"}"#)
+
+        let payload = try await client.send(PayloadEndpoint(baseURL: baseURL))
+
+        #expect(payload == Payload(value: "Kraków"))
+    }
+
+    @Test(arguments: ["text/html", "text/plain; charset=utf-8", "application/jsonp", "", nil])
+    func reportsNonJSONPageAsOfflineBecauseItComesFromACaptivePortal(contentType: String?) async {
+        let baseURL = StubURLProtocol.register(
+            status: 200,
+            contentType: contentType,
+            body: "<html><body>Log in to the hotel Wi-Fi</body></html>"
+        )
+
+        await #expect(throws: APIError.offline) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func reportsEmptySuccessfulResponseAsDecodingError() async {
+        let baseURL = StubURLProtocol.register(status: 204, contentType: nil, body: "")
+
+        await #expect {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        } throws: { error in
+            guard case APIError.decoding = error else { return false }
+            return true
+        }
+    }
+
+    @Test(arguments: [
+        (204, nil as String?, ""),
+        (200, "application/json" as String?, #"{"deleted":true}"#),
+    ])
+    func acceptsEmptyOrJSONBodyForAnEmptyResponse(status: Int, contentType: String?, body: String) async throws {
+        let baseURL = StubURLProtocol.register(status: status, contentType: contentType, body: body)
+
+        let response = try await client.send(DeletePayloadEndpoint(baseURL: baseURL))
+
+        #expect(response == EmptyResponse())
+    }
+
+    @Test func reportsNonJSONBodyForAnEmptyResponseAsOffline() async {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: "text/html", body: "<html>Log in</html>")
+
+        await #expect(throws: APIError.offline) {
+            try await client.send(DeletePayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func decodesANonJSONBodyTheEndpointAccepts() async throws {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: "text/csv; charset=utf-8", body: "Kraków,Gdańsk")
+
+        let cities = try await client.send(CSVEndpoint(baseURL: baseURL))
+
+        #expect(cities == ["Kraków", "Gdańsk"])
+    }
+
+    @Test func reportsABodyTheEndpointDoesNotAcceptAsOffline() async {
+        let baseURL = StubURLProtocol.register(status: 200, contentType: "text/html", body: "<html>Log in</html>")
+
+        await #expect(throws: APIError.offline) {
+            try await client.send(CSVEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func decodesJSONThroughAGenericEndpoint() async throws {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)
+
+        let payload = try await client.send(GenericEndpoint<Payload>(baseURL: baseURL))
+
+        #expect(payload == Payload(value: "Kraków"))
+    }
+
+    @Test func decodesEmptyResponseThroughAGenericEndpoint() async throws {
+        let baseURL = StubURLProtocol.register(status: 204, contentType: nil, body: "")
+
+        let response = try await client.send(GenericEndpoint<EmptyResponse>(baseURL: baseURL))
+
+        #expect(response == EmptyResponse())
+    }
+
+    @Test func rejectsDeclaredContentLengthOverTheSizeCapBeforeReadingTheBody() async {
+        let baseURL = StubURLProtocol.register { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Type": "application/json",
+                    "Content-Length": String(URLSessionAPIClient.maxResponseSize + 1),
+                ]
+            )!
+            return (response, Data(#"{"value":"Kraków"}"#.utf8))
+        }
+
+        await #expect(throws: APIError.transport) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func acceptsResponseOfExactlyTheSizeCap() async throws {
+        let wrapper = #"{"value":""#.count + #""}"#.count
+        let value = String(repeating: "a", count: URLSessionAPIClient.maxResponseSize - wrapper)
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":""# + value + #""}"#)
+
+        let payload = try await client.send(PayloadEndpoint(baseURL: baseURL))
+
+        #expect(payload == Payload(value: value))
+    }
+
+    @Test func rejectsResponseOneByteOverTheSizeCap() async {
+        let wrapper = #"{"value":""#.count + #""}"#.count
+        let value = String(repeating: "a", count: URLSessionAPIClient.maxResponseSize - wrapper + 1)
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":""# + value + #""}"#)
+
+        await #expect(throws: APIError.transport) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func rejectsResponseLargerThanTheSizeCap() async {
+        let body = #"{"value":""# + String(repeating: "a", count: URLSessionAPIClient.maxResponseSize) + #""}"#
+        let baseURL = StubURLProtocol.register(status: 200, body: body)
+
+        await #expect(throws: APIError.transport) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test(arguments: [
+        (URLError.Code.notConnectedToInternet, APIError.offline),
+        (.networkConnectionLost, .offline),
+        (.dataNotAllowed, .offline),
+        (.internationalRoamingOff, .offline),
+        (.cannotConnectToHost, .offline),
+        (.timedOut, .timeout),
+        (.cannotFindHost, .transport),
+        (.secureConnectionFailed, .transport),
+        (.badServerResponse, .transport),
+    ])
+    func mapsURLErrors(code: URLError.Code, expected: APIError) async {
+        let baseURL = StubURLProtocol.register(failingWith: code)
+
+        await #expect(throws: expected) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func reportsCancelledURLRequestAsCancellation() async {
+        let baseURL = StubURLProtocol.register(failingWith: .cancelled)
+
+        await #expect(throws: CancellationError.self) {
+            try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func keepsCancellationThrownWhileDecoding() async {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)
+
+        await #expect(throws: CancellationError.self) {
+            try await client.send(CancellingDecoderEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func reportsCancelledTaskAsCancellation() async {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)
+        let client = client
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+    }
+}
