@@ -30,7 +30,7 @@ struct AppCoordinatorView: View {
     @ViewBuilder
     private func forecastScreen(for city: City) -> some View {
         if let forecast = mockSearch.forecast(for: city) {
-            ForecastView(city: city, forecast: forecast)
+            ForecastView(city: city, forecast: forecast, now: forecast.current.date)
         } else {
             StateView(
                 icon: .exclamationmarkTriangle,
