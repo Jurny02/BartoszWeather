@@ -9,10 +9,14 @@ nonisolated public enum Typography: CaseIterable, Sendable {
     case footnote
     case caption
     case metricValue
+    case cityTitle
+    case heroTemperature
 
     public var size: CGFloat {
         switch self {
         case .largeTitle: 34
+        case .cityTitle: 28
+        case .heroTemperature: 88
         case .title: 22
         case .headline, .body: 17
         case .footnote: 13
@@ -26,7 +30,8 @@ nonisolated public enum Typography: CaseIterable, Sendable {
         case .largeTitle, .title: .bold
         case .headline: .semibold
         case .body, .footnote: .regular
-        case .caption, .metricValue: .medium
+        case .caption, .metricValue, .cityTitle: .medium
+        case .heroTemperature: .light
         }
     }
 
@@ -38,7 +43,8 @@ nonisolated public enum Typography: CaseIterable, Sendable {
         case .body: .body
         case .footnote: .footnote
         case .caption: .caption
-        case .metricValue: .title
+        case .metricValue, .cityTitle: .title
+        case .heroTemperature: .largeTitle
         }
     }
 }

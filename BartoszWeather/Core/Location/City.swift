@@ -19,4 +19,17 @@ nonisolated public struct City: Identifiable, Hashable, Codable, Sendable {
         self.country = country
         self.coordinate = coordinate
     }
+
+    /// The region and the country, trimmed, leaving out whichever is missing or blank.
+    public var regionAndCountryParts: [String] {
+        [region, country]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// The region and the country joined by " · ", leaving out whichever is missing or blank; `nil` when both are.
+    public var regionAndCountry: String? {
+        let parts = regionAndCountryParts
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
 }
