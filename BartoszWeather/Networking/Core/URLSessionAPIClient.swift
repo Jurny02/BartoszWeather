@@ -41,6 +41,8 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         }
         do {
             return try endpoint.decode(data)
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             logger.error("GET \(endpoint.path, privacy: .public) decoding failed: \(error, privacy: .private)")
             throw APIError.decoding(description: String(describing: error))

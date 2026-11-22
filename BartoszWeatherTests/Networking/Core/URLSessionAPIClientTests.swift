@@ -25,6 +25,17 @@ struct URLSessionAPIClientTests {
         let path = "/payload"
     }
 
+    nonisolated struct CancellingDecoderEndpoint: Endpoint {
+        typealias Response = Payload
+
+        let baseURL: URL
+        let path = "/payload"
+
+        func decode(_ data: Data) throws -> Payload {
+            throw CancellationError()
+        }
+    }
+
     private let client: URLSessionAPIClient = {
         let configuration = URLSessionConfiguration.api
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -125,6 +136,14 @@ struct URLSessionAPIClientTests {
 
         await #expect(throws: CancellationError.self) {
             try await client.send(PayloadEndpoint(baseURL: baseURL))
+        }
+    }
+
+    @Test func keepsCancellationThrownWhileDecoding() async {
+        let baseURL = StubURLProtocol.register(status: 200, body: #"{"value":"Kraków"}"#)
+
+        await #expect(throws: CancellationError.self) {
+            try await client.send(CancellingDecoderEndpoint(baseURL: baseURL))
         }
     }
 
