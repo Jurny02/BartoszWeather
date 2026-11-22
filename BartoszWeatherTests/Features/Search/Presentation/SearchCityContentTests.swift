@@ -14,6 +14,13 @@ struct SearchCityContentTests {
         #expect(!SearchCityContent.loading.isInputInvalid)
     }
 
+    @Test func reservesTheValidationAreaEverywhereButTheHistory() {
+        #expect(!SearchCityContent.history([]).reservesValidationArea)
+        #expect(SearchCityContent.prompt.reservesValidationArea)
+        #expect(SearchCityContent.invalidInput.reservesValidationArea)
+        #expect(SearchCityContent.results(query: "Krak", cities: []).reservesValidationArea)
+    }
+
     @Test func invitesTheFirstSearch() throws {
         let message = try #require(SearchCityContent.prompt.stateMessage)
         #expect(message.icon == .cloudSunFill)

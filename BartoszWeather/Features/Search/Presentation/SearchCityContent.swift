@@ -23,6 +23,13 @@ nonisolated public enum SearchCityContent: Hashable, Sendable {
         isInputInvalid ? String(localized: "Only letters, spaces and hyphens are allowed.") : nil
     }
 
+    /// `true` when space for the validation message stays under the field, so the content does not jump;
+    /// the history leaves it out and starts right below the field.
+    public var reservesValidationArea: Bool {
+        if case .history = self { return false }
+        return true
+    }
+
     /// The hint shown in place of results while the input is invalid.
     public static var invalidInputHint: String {
         String(localized: "Try “Nowy Sącz” or “Bielsko-Biała”")
