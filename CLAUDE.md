@@ -52,7 +52,7 @@ Modules are folders inside one app target, laid out so they can later become rea
 - One branch and one PR per step, branched from current `main`: `type/short-description`.
 - Conventional Commits: `type(scope): subject` in the imperative mood, subject at most 72 characters.
   - Types: `feat`, `fix`, `test`, `refactor`, `chore`, `ci`, `docs`, `style`.
-  - Scopes: `app`, `core`, `networking`, `theming`, `search`, `forecast`, `ci`.
+  - Scopes: `app`, `core`, `networking`, `theming`, `search`, `forecast`.
     Leave the scope out only for repository-wide changes (tooling, docs, ignore rules).
 - Each commit is one coherent change with its tests, and builds with green tests.
   Red-green cycles stay local; do not commit failing tests.
