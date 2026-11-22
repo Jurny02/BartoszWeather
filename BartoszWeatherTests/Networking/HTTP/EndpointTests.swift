@@ -91,6 +91,24 @@ struct EndpointTests {
         #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/x-www-form-urlencoded")
     }
 
+    @Test func endpointContentTypeOverridesTheBodyContentType() throws {
+        let request = try FavoriteEndpoint(
+            headers: ["Content-Type": "application/vnd.api+json"],
+            body: .json(Favorite(cityID: 3094802))
+        ).makeRequest()
+
+        #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/vnd.api+json")
+    }
+
+    @Test func encodesJSONBodyWithTheGivenEncoder() throws {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        let body = try HTTPBody.json(Favorite(cityID: 3094802), encoder: encoder)
+
+        #expect(body.data == Data(#"{"city_id":3094802}"#.utf8))
+    }
+
     @Test func reportsUnencodableBodyAsInvalidRequest() {
         #expect(throws: APIError.invalidRequest) {
             try UnencodableBodyEndpoint().makeRequest()
