@@ -2,34 +2,46 @@ import SwiftUI
 
 /// A day's temperature span drawn as a segment of a track that represents the span of all days.
 struct TemperatureRangeBar: View {
+    private static let barHeight: CGFloat = 4
+
     @Environment(\.weatherAppearance) private var appearance
     @ScaledMetric private var trackWidth = 64.0
-    private let day: DailyForecast
-    private let range: ClosedRange<Double>?
+    private let segment: TemperatureRangeSegment?
 
     init(day: DailyForecast, range: ClosedRange<Double>?) {
-        self.day = day
-        self.range = range
+        segment = TemperatureRangeSegment(low: day.minTemperature, high: day.maxTemperature, within: range)
     }
 
     var body: some View {
-        Capsule()
-            .fill(Color(appearance.secondaryText).opacity(0.25))
-            .frame(width: trackWidth, height: 4)
+        track
             .opacity(segment == nil ? 0 : 1)
             .overlay(alignment: .leading) {
-                if let segment {
-                    Capsule()
-                        .fill(Color(appearance.accent))
-                        .frame(width: trackWidth * (segment.end - segment.start), height: 4)
-                        .offset(x: trackWidth * segment.start)
+                if segment != nil {
+                    fill
                 }
             }
             .accessibilityHidden(true)
     }
 
-    private var segment: TemperatureRangeSegment? {
-        TemperatureRangeSegment(low: day.minTemperature, high: day.maxTemperature, within: range)
+    private var track: some View {
+        Capsule()
+            .fill(Color(appearance.secondaryText).opacity(0.25))
+            .frame(width: trackWidth, height: Self.barHeight)
+    }
+
+    private var fill: some View {
+        Capsule()
+            .fill(Color(appearance.accent))
+            .frame(width: fillWidth, height: Self.barHeight)
+            .offset(x: fillOffset)
+    }
+
+    private var fillWidth: CGFloat {
+        trackWidth * (segment?.length ?? 0)
+    }
+
+    private var fillOffset: CGFloat {
+        trackWidth * (segment?.start ?? 0)
     }
 }
 

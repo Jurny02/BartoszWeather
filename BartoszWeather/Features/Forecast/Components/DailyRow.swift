@@ -16,7 +16,6 @@ struct DailyRow: View {
     }
 
     var body: some View {
-        let dayName = WeatherFormatter(timeZone: timeZone).dayName(day.date, now: now)
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: Spacing.xSmall) {
@@ -64,6 +63,10 @@ struct DailyRow: View {
                 .foregroundStyle(Color(appearance.text))
                 .frame(width: columnWidth, alignment: .leading)
         }
+    }
+
+    private var dayName: String {
+        WeatherFormatter(timeZone: timeZone).dayName(day.date, now: now)
     }
 }
 

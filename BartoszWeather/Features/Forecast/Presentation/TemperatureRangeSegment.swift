@@ -3,6 +3,11 @@ nonisolated public struct TemperatureRangeSegment: Equatable, Sendable {
     public let start: Double
     public let end: Double
 
+    /// How much of the bar the segment covers, from 0 to 1.
+    public var length: Double {
+        end - start
+    }
+
     /// Creates the segment for a day, or `nil` when the day or the shared range lacks a temperature.
     ///
     /// A shared range of a single temperature fills the whole bar.

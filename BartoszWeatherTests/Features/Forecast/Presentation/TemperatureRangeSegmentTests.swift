@@ -9,6 +9,12 @@ struct TemperatureRangeSegmentTests {
         #expect(segment?.end == 0.75)
     }
 
+    @Test func measuresTheSegmentAsAFractionOfTheBar() {
+        let segment = TemperatureRangeSegment(low: 5, high: 15, within: 0...20)
+
+        #expect(segment?.length == 0.5)
+    }
+
     @Test func fillsTheBarForTheExtremeDays() {
         let segment = TemperatureRangeSegment(low: 0, high: 20, within: 0...20)
 
