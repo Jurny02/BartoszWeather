@@ -44,39 +44,58 @@ public actor SwiftDataHistoryRepository: ModelActor, SearchHistoryRepository, Fo
     }
 
     public func entries() throws -> [SearchHistoryEntry] {
-        let entries = try newestFirst().prefix(Self.limit).map { record in
-            SearchHistoryEntry(city: record.city, forecast: validForecast(of: record))
+        try commit { _ in
+            try newestFirst().prefix(Self.limit).map { record in
+                SearchHistoryEntry(city: record.city, forecast: validForecast(of: record))
+            }
         }
-        try saveChanges()
-        return entries
     }
 
     public func remove(cityID: City.ID) throws {
-        try record(for: cityID).map(modelContext.delete)
-        try saveChanges()
+        try commit { _ in
+            try record(for: cityID).map(modelContext.delete)
+        }
     }
 
     public func removeAll() throws {
-        try modelContext.fetch(FetchDescriptor<CityHistoryRecord>()).forEach(modelContext.delete)
-        try saveChanges()
+        try commit { _ in
+            try modelContext.fetch(FetchDescriptor<CityHistoryRecord>()).forEach(modelContext.delete)
+        }
     }
 
     public func save(_ forecast: Forecast, for city: City) throws {
         let data = try StoredForecast(forecast).encoded()
-        if let record = try record(for: city.id) {
-            record.update(city: city, savedAt: now(), forecastData: data)
-        } else {
-            modelContext.insert(CityHistoryRecord(city: city, savedAt: now(), forecastData: data))
+        try commit { _ in
+            if let record = try record(for: city.id) {
+                record.update(city: city, savedAt: now(), forecastData: data)
+            } else {
+                modelContext.insert(CityHistoryRecord(city: city, savedAt: now(), forecastData: data))
+            }
+            try newestFirst().dropFirst(Self.limit).forEach(modelContext.delete)
         }
-        try newestFirst().dropFirst(Self.limit).forEach(modelContext.delete)
-        try saveChanges()
     }
 
     public func forecast(for cityID: City.ID) throws -> Forecast? {
-        guard let record = try record(for: cityID) else { return nil }
-        let forecast = validForecast(of: record)
-        try saveChanges()
-        return forecast
+        try commit { _ in
+            try record(for: cityID).flatMap(validForecast)
+        }
+    }
+
+    /// Runs `work` on the model context and saves what it changed.
+    ///
+    /// When `work` or the save throws, every pending change is discarded before the error is rethrown,
+    /// so a failed call never takes effect later through another call's save.
+    func commit<Value: Sendable>(_ work: (ModelContext) throws -> Value) throws -> Value {
+        do {
+            let result = try work(modelContext)
+            if modelContext.hasChanges {
+                try modelContext.save()
+            }
+            return result
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
     }
 
     private func record(for cityID: City.ID) throws -> CityHistoryRecord? {
@@ -104,10 +123,5 @@ public actor SwiftDataHistoryRepository: ModelActor, SearchHistoryRepository, Fo
             record.forecastData = nil
             return nil
         }
-    }
-
-    private func saveChanges() throws {
-        guard modelContext.hasChanges else { return }
-        try modelContext.save()
     }
 }

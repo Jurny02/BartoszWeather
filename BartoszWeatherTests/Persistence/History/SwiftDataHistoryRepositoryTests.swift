@@ -126,6 +126,21 @@ struct SwiftDataHistoryRepositoryTests {
         #expect(try storedForecastData(for: 1) == nil)
     }
 
+    @Test func discardsTheChangesOfAFailedWrite() async throws {
+        try await repository.save(forecast(), for: city(1))
+        let unsaved = city(2)
+        let failingWrite: @Sendable (ModelContext) throws -> Void = { context in
+            context.insert(CityHistoryRecord(city: unsaved, savedAt: Self.start, forecastData: nil))
+            throw WriteFailure()
+        }
+        await #expect(throws: WriteFailure.self) {
+            try await repository.commit(failingWrite)
+        }
+        try await repository.remove(cityID: 1)
+        #expect(try await repository.entries().isEmpty)
+        #expect(try record(for: 2) == nil)
+    }
+
     @Test func keepsTheHistoryInTheContainer() async throws {
         try await repository.save(forecast(), for: city(1))
         let reopened = SwiftDataHistoryRepository(modelContainer: container, now: { Self.start })
@@ -150,3 +165,6 @@ struct SwiftDataHistoryRepositoryTests {
         try context.save()
     }
 }
+
+/// An error thrown on purpose in the middle of a write.
+private struct WriteFailure: Error {}
