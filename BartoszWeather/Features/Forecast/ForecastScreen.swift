@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Shows the forecast view model's state: loading, a full-screen error with a retry,
+/// Shows the forecast view model's state: a loading skeleton, a full-screen error with a retry,
 /// or the forecast with pull-to-refresh and a status line when the last load or refresh failed;
 /// after a failed load, the forecast shown is the city's stored one.
 ///
+/// Switching between loading, error and forecast cross-fades, so a night sky fades in instead of flashing.
 /// A retry is cancelled when the screen disappears, like the first load.
 struct ForecastScreen: View {
     @State private var viewModel: ForecastViewModel
@@ -27,36 +28,35 @@ struct ForecastScreen: View {
             }
     }
 
-    @ViewBuilder
     private var content: some View {
-        switch viewModel.state {
-        case .loading:
-            loadingView
-        case .failed(let issue):
-            failedView(issue.message)
-        case .loaded(let forecast, let issue):
-            ForecastView(city: viewModel.city, forecast: forecast, now: now ?? .now)
-                .refreshable {
-                    await viewModel.refresh()
-                }
-                .safeAreaInset(edge: .top) {
-                    if let issue {
-                        statusLine(issue, forecast: forecast)
+        ZStack {
+            switch viewModel.state {
+            case .loading:
+                loadingView
+                    .transition(.opacity)
+            case .failed(let issue):
+                failedView(issue.message)
+                    .transition(.opacity)
+            case .loaded(let forecast, let issue):
+                ForecastView(city: viewModel.city, forecast: forecast, now: now ?? .now)
+                    .refreshable {
+                        await viewModel.refresh()
                     }
-                }
+                    .safeAreaInset(edge: .top) {
+                        if let issue {
+                            statusLine(issue, forecast: forecast)
+                        }
+                    }
+                    .transition(.opacity)
+            }
         }
+        .animation(.skyChange, value: viewModel.state.phase)
     }
 
     private var loadingView: some View {
-        VStack(spacing: Spacing.small) {
-            ProgressView()
-            Text("Loading forecast…")
-                .typography(.footnote)
-                .foregroundStyle(Color(.Text.secondary))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.background).ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
+        ForecastLoadingView(city: viewModel.city)
+            .background(Color(.background).ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
     }
 
     private func failedView(_ message: ForecastStateMessage) -> some View {

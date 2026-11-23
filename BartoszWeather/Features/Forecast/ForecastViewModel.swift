@@ -9,6 +9,22 @@ nonisolated public enum ForecastScreenState: Hashable, Sendable {
     case loaded(Forecast, issue: ForecastIssue?)
     /// The first load failed and no stored forecast can be shown.
     case failed(ForecastIssue)
+
+    /// Which of the three screens the state shows, ignoring the data it carries.
+    public enum Phase: Hashable, Sendable {
+        case loading
+        case failed
+        case loaded
+    }
+
+    /// The screen this state shows; it changes only when the screen switches, never when a refresh replaces the forecast.
+    public var phase: Phase {
+        switch self {
+        case .loading: .loading
+        case .failed: .failed
+        case .loaded: .loaded
+        }
+    }
 }
 
 /// Owns the forecast screen's state for one city: the first load, retries after a failure and pull-to-refresh.

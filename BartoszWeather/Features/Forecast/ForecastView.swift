@@ -29,14 +29,26 @@ struct ForecastView: View {
             .padding(.bottom, Spacing.small)
         }
         .background {
-            Sky(condition: current.condition).gradient(isNight: !current.isDay).ignoresSafeArea()
+            skyBackground(for: current)
         }
+        .animation(.skyChange, value: appearance)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(current.isDay ? nil : .dark, for: .navigationBar)
         .environment(\.timeZone, forecast.timeZone)
         .environment(\.weatherAppearance, appearance)
         .environment(\.forecastNow, now)
+    }
+
+    private func skyBackground(for current: CurrentWeather) -> some View {
+        let backdrop = SkyBackdrop(sky: Sky(condition: current.condition), isNight: !current.isDay)
+        return ZStack {
+            backdrop.sky.gradient(isNight: backdrop.isNight)
+                .id(backdrop)
+                .transition(.opacity)
+        }
+        .animation(.skyChange, value: backdrop)
+        .ignoresSafeArea()
     }
 
     private func metrics(for current: CurrentWeather) -> some View {
@@ -85,6 +97,12 @@ struct ForecastView: View {
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
     }
+}
+
+/// The sky behind the forecast and whether it is night there, which identify the background gradient.
+private struct SkyBackdrop: Hashable {
+    let sky: Sky
+    let isNight: Bool
 }
 
 #if DEBUG
