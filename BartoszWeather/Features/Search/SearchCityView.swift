@@ -249,8 +249,13 @@ struct SearchCityView: View {
 
 /// Hosts the search screen in previews with an editable query and no-op actions.
 private struct SearchCityPreview: View {
-    @State var query: String
+    @State private var query: String
     let content: SearchCityContent
+
+    init(query: String, content: SearchCityContent) {
+        _query = State(initialValue: query)
+        self.content = content
+    }
 
     var body: some View {
         NavigationStack {

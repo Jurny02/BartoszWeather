@@ -18,7 +18,7 @@ struct URLSessionAPIClientTests {
         let path = "/payload"
 
         func errorReason(from data: Data) -> String? {
-            String(decoding: data, as: UTF8.self)
+            String(bytes: data, encoding: .utf8)
         }
     }
 
@@ -74,7 +74,10 @@ struct URLSessionAPIClientTests {
         }
 
         func decode(_ data: Data) throws -> [String] {
-            String(decoding: data, as: UTF8.self).split(separator: ",").map(String.init)
+            guard let text = String(bytes: data, encoding: .utf8) else {
+                throw CocoaError(.fileReadInapplicableStringEncoding)
+            }
+            return text.split(separator: ",").map(String.init)
         }
     }
 
@@ -96,7 +99,12 @@ struct URLSessionAPIClientTests {
         let received = OSAllocatedUnfairLock<(method: String?, body: Data?)>(initialState: (nil, nil))
         let baseURL = StubURLProtocol.register { request in
             received.withLock { $0 = (request.httpMethod, request.bodyData) }
-            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
             return (response, Data(#"{"value":"Kraków"}"#.utf8))
         }
 

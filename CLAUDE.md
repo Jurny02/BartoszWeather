@@ -8,7 +8,10 @@ Data comes from Open-Meteo (geocoding and forecast APIs, no API key).
 ```sh
 xcodebuild build -scheme BartoszWeather -destination 'platform=iOS Simulator,name=iPhone 17'
 xcodebuild test  -scheme BartoszWeather -destination 'platform=iOS Simulator,name=iPhone 17'
+swiftlint lint --strict
 ```
+
+CI runs SwiftLint (`.swiftlint.yml`) in strict mode, so every warning fails the build.
 
 The project uses the Xcode 27 `project.xcproj` format with filesystem-synchronized folders:
 files added under `BartoszWeather/` or `BartoszWeatherTests/` join their target automatically.
