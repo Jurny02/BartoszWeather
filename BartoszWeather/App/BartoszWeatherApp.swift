@@ -31,9 +31,7 @@ struct BartoszWeatherApp: App {
             AppCoordinatorView(
                 coordinator: coordinator,
                 searchViewModel: searchViewModel,
-                makeForecastViewModel: { [forecastRepository] city in
-                    ForecastViewModel(city: city, repository: forecastRepository)
-                }
+                forecastRepository: forecastRepository
             )
         }
     }

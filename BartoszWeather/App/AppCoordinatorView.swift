@@ -5,23 +5,23 @@ import SwiftUI
 struct AppCoordinatorView: View {
     @Bindable private var coordinator: AppCoordinator
     private let searchViewModel: SearchCityViewModel
-    private let makeForecastViewModel: (City) -> ForecastViewModel
+    private let forecastRepository: any ForecastRepository
 
     init(
         coordinator: AppCoordinator,
         searchViewModel: SearchCityViewModel,
-        makeForecastViewModel: @escaping (City) -> ForecastViewModel
+        forecastRepository: any ForecastRepository
     ) {
         self.coordinator = coordinator
         self.searchViewModel = searchViewModel
-        self.makeForecastViewModel = makeForecastViewModel
+        self.forecastRepository = forecastRepository
     }
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
             SearchCityScreen(viewModel: searchViewModel)
                 .navigationDestination(for: City.self) { city in
-                    ForecastScreen(viewModel: makeForecastViewModel(city))
+                    ForecastScreen(viewModel: ForecastViewModel(city: city, repository: forecastRepository))
                 }
         }
     }
@@ -38,9 +38,7 @@ struct AppCoordinatorView: View {
             history: PreviewSearchHistoryRepository(entries: SearchHistoryEntry.previewEntries),
             onSelectCity: coordinator.showForecast(for:)
         ),
-        makeForecastViewModel: { city in
-            ForecastViewModel(city: city, repository: PreviewForecastRepository(result: .success(.krakowDay)))
-        }
+        forecastRepository: PreviewForecastRepository(result: .success(.krakowDay))
     )
 }
 #endif
