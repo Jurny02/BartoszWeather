@@ -35,6 +35,7 @@ struct AppCoordinatorView: View {
         searchViewModel: SearchCityViewModel(
             service: PreviewCitySearchService(),
             clock: ContinuousClock(),
+            history: PreviewSearchHistoryRepository(entries: SearchHistoryEntry.previewEntries),
             onSelectCity: coordinator.showForecast(for:)
         ),
         makeForecastViewModel: { city in

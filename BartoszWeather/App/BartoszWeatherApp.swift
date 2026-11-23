@@ -17,6 +17,7 @@ struct BartoszWeatherApp: App {
         _searchViewModel = State(initialValue: SearchCityViewModel(
             service: OpenMeteoCitySearchService(client: client, language: language),
             clock: ContinuousClock(),
+            history: history,
             onSelectCity: coordinator.showForecast(for:)
         ))
         forecastRepository = DefaultForecastRepository(
