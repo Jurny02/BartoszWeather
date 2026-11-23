@@ -12,10 +12,12 @@ struct BartoszWeatherApp: App {
         let coordinator = AppCoordinator()
         let client = URLSessionAPIClient()
         let language = Locale.current.language.languageCode?.identifier ?? "en"
+        let history = SwiftDataHistoryRepository.onDiskOrInMemory(now: Date.init)
         _coordinator = State(initialValue: coordinator)
         _searchViewModel = State(initialValue: SearchCityViewModel(
             service: OpenMeteoCitySearchService(client: client, language: language),
             clock: ContinuousClock(),
+            history: history,
             onSelectCity: coordinator.showForecast(for:)
         ))
         forecastService = OpenMeteoForecastService(client: client, now: Date.init)
