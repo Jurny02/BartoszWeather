@@ -40,19 +40,14 @@ private struct SkeletonRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xSmall) {
-            bar(width: nameWidth, height: 16)
-            bar(width: Self.detailWidth, height: 12)
+            SkeletonBlock(width: nameWidth, height: 16, cornerRadius: Self.barCornerRadius)
+            SkeletonBlock(width: Self.detailWidth, height: 12, cornerRadius: Self.barCornerRadius)
         }
+        .skeletonPulse()
         .padding(.horizontal, Spacing.medium)
         .padding(.vertical, Self.verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.Surface.card))
-    }
-
-    private func bar(width: CGFloat, height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: Self.barCornerRadius)
-            .fill(Color(.separatorLine))
-            .frame(width: width, height: height)
     }
 }
 
