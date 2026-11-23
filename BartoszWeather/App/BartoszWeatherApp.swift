@@ -6,7 +6,7 @@ import SwiftUI
 struct BartoszWeatherApp: App {
     @State private var coordinator: AppCoordinator
     @State private var searchViewModel: SearchCityViewModel
-    private let forecastService: any ForecastService
+    private let forecastRepository: any ForecastRepository
 
     init() {
         let coordinator = AppCoordinator()
@@ -20,7 +20,10 @@ struct BartoszWeatherApp: App {
             history: history,
             onSelectCity: coordinator.showForecast(for:)
         ))
-        forecastService = OpenMeteoForecastService(client: client, now: Date.init)
+        forecastRepository = DefaultForecastRepository(
+            service: OpenMeteoForecastService(client: client, now: Date.init),
+            store: history
+        )
     }
 
     var body: some Scene {
@@ -28,8 +31,8 @@ struct BartoszWeatherApp: App {
             AppCoordinatorView(
                 coordinator: coordinator,
                 searchViewModel: searchViewModel,
-                makeForecastViewModel: { [forecastService] city in
-                    ForecastViewModel(city: city, service: forecastService)
+                makeForecastViewModel: { [forecastRepository] city in
+                    ForecastViewModel(city: city, repository: forecastRepository)
                 }
             )
         }
