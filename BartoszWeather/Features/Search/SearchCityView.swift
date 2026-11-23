@@ -1,6 +1,8 @@
 import SwiftUI
 
 /// The search screen: a title, the city name field, and below it history, results, loading or an empty or error state.
+///
+/// A tap outside the field, scrolling or choosing a city hides the keyboard.
 struct SearchCityView: View {
     private static let emptyStateBottomInset: CGFloat = 108
     private static let clearButtonMinWidth: CGFloat = 64
@@ -12,6 +14,7 @@ struct SearchCityView: View {
     private let onDeleteHistoryEntry: (SearchHistoryEntry) -> Void
     private let onClearHistory: () -> Void
     private let onRetry: () -> Void
+    @FocusState private var isSearchFieldFocused: Bool
     @ScaledMetric(relativeTo: .footnote) private var validationAreaHeight = 40.0
     @ScaledMetric(relativeTo: .title) private var invalidHintIconSize = 40.0
 
@@ -36,6 +39,8 @@ struct SearchCityView: View {
             header
             contentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .contentShape(.rect)
+                .simultaneousGesture(TapGesture().onEnded(dismissKeyboard))
         }
         .background(Color(.background).ignoresSafeArea())
         .navigationTitle("Weather")
@@ -48,17 +53,27 @@ struct SearchCityView: View {
                 .typography(.largeTitle)
                 .foregroundStyle(Color(.Text.primary))
                 .accessibilityAddTraits(.isHeader)
-            SearchField(text: $query, isInvalid: content.isInputInvalid)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+                .onTapGesture(perform: dismissKeyboard)
+            SearchField(text: $query, isInvalid: content.isInputInvalid, isFocused: $isSearchFieldFocused)
             if content.reservesValidationArea {
                 Text(content.validationMessage ?? "")
                     .typography(.footnote)
                     .foregroundStyle(Color(.error))
                     .frame(maxWidth: .infinity, minHeight: validationAreaHeight, alignment: .topLeading)
                     .accessibilityHidden(content.validationMessage == nil)
+                    .contentShape(.rect)
+                    .onTapGesture(perform: dismissKeyboard)
             }
         }
         .padding(.horizontal, Spacing.large)
         .padding(.top, Spacing.small)
+        .background {
+            Color.clear
+                .contentShape(.rect)
+                .onTapGesture(perform: dismissKeyboard)
+        }
     }
 
     @ViewBuilder
@@ -93,7 +108,7 @@ struct SearchCityView: View {
             List {
                 ForEach(entries) { entry in
                     Button {
-                        onSelectCity(entry.city)
+                        select(entry.city)
                     } label: {
                         HistoryCard(entry: entry)
                     }
@@ -115,6 +130,7 @@ struct SearchCityView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.immediately)
         }
     }
 
@@ -126,11 +142,12 @@ struct SearchCityView: View {
                         .typography(.footnote)
                         .foregroundStyle(Color(.Text.secondary))
                 }
-                CityResultList(cities: cities, query: query, onSelect: onSelectCity)
+                CityResultList(cities: cities, query: query, onSelect: select)
             }
             .padding(.horizontal, Spacing.large)
             .padding(.bottom, Spacing.large)
         }
+        .scrollDismissesKeyboard(.immediately)
     }
 
     private func stateView(_ message: SearchStateMessage) -> some View {
@@ -165,6 +182,16 @@ struct SearchCityView: View {
                 .containerRelativeFrame(.vertical)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .scrollDismissesKeyboard(.immediately)
+    }
+
+    private func dismissKeyboard() {
+        isSearchFieldFocused = false
+    }
+
+    private func select(_ city: City) {
+        dismissKeyboard()
+        onSelectCity(city)
     }
 }
 
