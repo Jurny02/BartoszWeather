@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Shows the forecast view model's state: loading, a full-screen error with a retry,
-/// or the forecast with pull-to-refresh and a status line when the last refresh failed.
+/// or the forecast with pull-to-refresh and a status line when the last load or refresh failed;
+/// after a failed load, the forecast shown is the city's stored one.
 ///
 /// A retry is cancelled when the screen disappears, like the first load.
 struct ForecastScreen: View {
@@ -106,6 +107,18 @@ struct ForecastScreen: View {
 #Preview("Offline") {
     NavigationStack {
         ForecastScreen(viewModel: ForecastViewModel(city: .krakow, repository: PreviewForecastRepository(result: .failure(.offline))))
+    }
+}
+
+#Preview("Offline with stored data") {
+    NavigationStack {
+        ForecastScreen(
+            viewModel: ForecastViewModel(
+                city: .krakow,
+                repository: PreviewForecastRepository(result: .failure(.offline), cached: .krakowDay)
+            ),
+            now: Forecast.krakowNow
+        )
     }
 }
 

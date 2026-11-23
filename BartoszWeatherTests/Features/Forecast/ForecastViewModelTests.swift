@@ -34,6 +34,76 @@ struct ForecastViewModelTests {
         #expect(viewModel.state == .failed(issue))
     }
 
+    @Test(arguments: [
+        (APIError.offline, ForecastIssue.offline),
+        (.server(status: 503, reason: nil), .serviceUnavailable),
+    ])
+    func showsTheStoredForecastWhenTheFirstLoadFails(error: APIError, issue: ForecastIssue) async {
+        let repository = FakeForecastRepository(error: error, cached: .krakowDay)
+        let viewModel = ForecastViewModel(city: .krakow, repository: repository)
+
+        await viewModel.load()
+
+        #expect(repository.cachedForecastRequests == [.krakow])
+        #expect(viewModel.state == .loaded(.krakowDay, issue: issue))
+    }
+
+    @Test func doesNotLookUpTheStoredForecastAfterASuccessfulLoad() async {
+        let repository = FakeForecastRepository(results: [.success(.partialData)], cached: .krakowDay)
+        let viewModel = ForecastViewModel(city: .krakow, repository: repository)
+
+        await viewModel.load()
+
+        #expect(repository.cachedForecastRequests.isEmpty)
+        #expect(viewModel.state == .loaded(.partialData, issue: nil))
+    }
+
+    @Test func keepsTheShownForecastWhenARefreshFails() async {
+        let repository = FakeForecastRepository(
+            results: [.success(.partialData), .failure(.offline)], cached: .krakowDay
+        )
+        let viewModel = ForecastViewModel(city: .krakow, repository: repository)
+        await viewModel.load()
+
+        await viewModel.refresh()
+
+        #expect(repository.cachedForecastRequests.isEmpty)
+        #expect(viewModel.state == .loaded(.partialData, issue: .offline))
+    }
+
+    @Test func ignoresTheStoredForecastOfALoadThatARetryReplaced() async {
+        let repository = FakeForecastRepository(
+            results: [.failure(.offline), .success(.partialData)], cached: .krakowDay, holdsResponses: true
+        )
+        let viewModel = ForecastViewModel(city: .krakow, repository: repository)
+        let load = Task { await viewModel.load() }
+        _ = await repository.nextRequest()
+        let retry = Task { await viewModel.retry() }
+        _ = await repository.nextRequest()
+
+        repository.releaseResponse()
+        await load.value
+        #expect(viewModel.state == .loading)
+
+        repository.releaseResponse()
+        await retry.value
+        #expect(viewModel.state == .loaded(.partialData, issue: nil))
+    }
+
+    @Test func keepsLoadingWhenACancelledLoadFailsAnywayWithAStoredForecast() async {
+        let repository = FakeForecastRepository(
+            error: .offline, cached: .krakowDay, holdsResponses: true, checksCancellation: false
+        )
+        let viewModel = ForecastViewModel(city: .krakow, repository: repository)
+        let load = Task { await viewModel.load() }
+        _ = await repository.nextRequest()
+
+        load.cancel()
+        await load.value
+
+        #expect(viewModel.state == .loading)
+    }
+
     @Test func loadsOnlyOnce() async {
         let repository = FakeForecastRepository(forecast: .krakowDay)
         let viewModel = ForecastViewModel(city: .krakow, repository: repository)
