@@ -103,6 +103,25 @@ struct OpenMeteoForecastServiceTests {
         ))
     }
 
+    @Test func startsEachDayAtLocalMidnightAcrossADaylightSavingChange() async throws {
+        let october26AtSummerOffset = 1_792_965_600
+        let (service, _) = makeService(response: response(
+            utcOffsetSeconds: 7200,
+            current: current(),
+            daily: ForecastDailyDTO(
+                time: [october26AtSummerOffset], weatherCode: [3], temperature2mMax: [12], temperature2mMin: [5],
+                precipitationProbabilityMax: [10]
+            )
+        ))
+
+        let forecast = try await service.forecast(for: .krakow)
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = warsaw
+        let october26 = try #require(calendar.date(from: DateComponents(year: 2026, month: 10, day: 26)))
+        #expect(forecast.daily.map(\.date) == [october26])
+    }
+
     @Test func fallsBackToTheUTCOffsetForAnUnknownTimeZone() async throws {
         let (service, _) = makeService(response: response(timezone: "Mars/Olympus_Mons", current: current()))
 

@@ -2,6 +2,8 @@ import Foundation
 
 /// Loads forecasts with the Open-Meteo detail preset and maps the response to `Forecast`.
 ///
+/// Days start at local midnight in the city's time zone, even across a daylight-saving change:
+/// the API stamps every day with the single UTC offset in force at request time.
 /// Values outside their physical range are read as not reported, and a missing day/night flag reads as day.
 /// At most 384 hours and 16 days are kept. A response without current conditions or without any time zone
 /// fails with `APIError.decoding`.
@@ -33,7 +35,13 @@ nonisolated private extension Forecast {
         self.init(
             current: CurrentWeather(current),
             hourly: response.hourly.map([HourlyForecast].init) ?? [],
-            daily: response.daily.map([DailyForecast].init) ?? [],
+            daily: response.daily.map {
+                [DailyForecast](
+                    $0,
+                    utcOffsetSeconds: response.utcOffsetSeconds ?? timeZone.secondsFromGMT(),
+                    timeZone: timeZone
+                )
+            } ?? [],
             timeZone: timeZone,
             updatedAt: updatedAt
         )
@@ -75,16 +83,26 @@ nonisolated private extension [HourlyForecast] {
 nonisolated private extension [DailyForecast] {
     static let maxCount = 16
 
-    init(_ daily: ForecastDailyDTO) {
+    init(_ daily: ForecastDailyDTO, utcOffsetSeconds: Int, timeZone: TimeZone) {
         self = daily.time.prefix(Self.maxCount).indices.map { index in
             DailyForecast(
-                date: Date(timeIntervalSince1970: TimeInterval(daily.time[index])),
+                date: Self.localMidnight(of: daily.time[index], utcOffsetSeconds: utcOffsetSeconds, in: timeZone),
                 condition: WeatherCondition(code: daily.weatherCode.element(at: index)),
                 minTemperature: daily.temperature2mMin.element(at: index),
                 maxTemperature: daily.temperature2mMax.element(at: index),
                 precipitationProbability: CurrentWeather.percent(daily.precipitationProbabilityMax.element(at: index))
             )
         }
+    }
+
+    static func localMidnight(of time: Int, utcOffsetSeconds: Int, in timeZone: TimeZone) -> Date {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        var local = Calendar(identifier: .gregorian)
+        local.timeZone = timeZone
+        let civilDate = Date(timeIntervalSince1970: TimeInterval(time + utcOffsetSeconds))
+        let day = utc.dateComponents([.year, .month, .day], from: civilDate)
+        return local.date(from: day) ?? Date(timeIntervalSince1970: TimeInterval(time))
     }
 }
 
