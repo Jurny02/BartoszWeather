@@ -51,7 +51,7 @@ large_tuple:
 custom_rules:
   no_xctest:
     name: Swift Testing only
-    regex: '^\s*(@\w+\s+)*((public|package|internal|fileprivate|private)\s+)?import\s+(\w+\s+)?XCTest\b'
+    regex: '^[^/"\n]*\bimport\s+(\w+\s+)?XCTest\b'
     message: Use Swift Testing (`import Testing`) instead of XCTest.
     severity: error
 
