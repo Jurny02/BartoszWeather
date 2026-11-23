@@ -1,0 +1,57 @@
+included:
+  - BartoszWeather
+  - BartoszWeatherTests
+
+opt_in_rules:
+  - implicitly_unwrapped_optional
+  - empty_count
+  - empty_string
+  - first_where
+  - last_where
+  - contains_over_first_not_nil
+  - contains_over_filter_count
+  - flatmap_over_map_reduce
+  - reduce_into
+  - toggle_bool
+  - redundant_nil_coalescing
+  - fatal_error_message
+  - private_swiftui_state
+  - modifier_order
+  - closure_spacing
+  - operator_usage_whitespace
+  - vertical_whitespace_closing_braces
+  - yoda_condition
+
+trailing_comma:
+  mandatory_comma: true
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_urls: true
+  ignores_multiline_strings: true
+
+file_length:
+  warning: 500
+
+type_body_length:
+  warning: 400
+  error: 500
+
+nesting:
+  type_level: 2
+
+cyclomatic_complexity:
+  ignores_case_statements: true
+
+large_tuple:
+  warning: 4
+  error: 5
+
+custom_rules:
+  no_xctest:
+    name: Swift Testing only
+    regex: '^\s*(@\w+\s+)*import\s+(\w+\s+)?XCTest\b'
+    message: Use Swift Testing (`import Testing`) instead of XCTest.
+    severity: error
+

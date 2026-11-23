@@ -18,6 +18,20 @@ env:
   DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.2
 
 jobs:
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: ghcr.io/realm/swiftlint:0.59.1@sha256:4002261af030eebefc377b8b5e429a3b553023d6b91cd6ea0d874d4cdaa1eaf8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint
+        run: swiftlint lint --strict --reporter github-actions-logging
+
   test:
     name: Build and test
     runs-on: xcode-27
