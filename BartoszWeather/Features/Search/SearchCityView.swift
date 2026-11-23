@@ -73,7 +73,7 @@ struct SearchCityView: View {
             results(cities, query: query)
         case .invalidInput:
             centered(invalidInputHint)
-        case .prompt, .noResults, .offline, .failure:
+        case .prompt, .noResults, .offline, .rateLimited, .failure:
             if let message = content.stateMessage {
                 centered(stateView(message))
             }
@@ -199,6 +199,10 @@ struct SearchCityView: View {
 
 #Preview("API error") {
     SearchCityPreview(query: "", content: .failure)
+}
+
+#Preview("Too many requests") {
+    SearchCityPreview(query: "Krak", content: .rateLimited)
 }
 
 #Preview("Dark") {

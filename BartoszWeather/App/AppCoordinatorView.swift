@@ -3,27 +3,21 @@ import SwiftUI
 /// The navigation stack driven by `AppCoordinator`, with the search screen at its root.
 struct AppCoordinatorView: View {
     @Bindable private var coordinator: AppCoordinator
-    @State private var query = ""
+    private let searchViewModel: SearchCityViewModel
     private let mockSearch: MockSearchData
 
-    init(coordinator: AppCoordinator, mockSearch: MockSearchData) {
+    init(coordinator: AppCoordinator, searchViewModel: SearchCityViewModel, mockSearch: MockSearchData) {
         self.coordinator = coordinator
+        self.searchViewModel = searchViewModel
         self.mockSearch = mockSearch
     }
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            SearchCityView(
-                query: $query,
-                content: mockSearch.content(for: query),
-                onSelectCity: coordinator.showForecast(for:),
-                onDeleteHistoryEntry: { _ in },
-                onClearHistory: {},
-                onRetry: {}
-            )
-            .navigationDestination(for: City.self) { city in
-                forecastScreen(for: city)
-            }
+            SearchCityScreen(viewModel: searchViewModel)
+                .navigationDestination(for: City.self) { city in
+                    forecastScreen(for: city)
+                }
         }
     }
 
@@ -41,6 +35,17 @@ struct AppCoordinatorView: View {
     }
 }
 
+#if DEBUG
 #Preview {
-    AppCoordinatorView(coordinator: AppCoordinator(), mockSearch: MockSearchData())
+    let coordinator = AppCoordinator()
+    AppCoordinatorView(
+        coordinator: coordinator,
+        searchViewModel: SearchCityViewModel(
+            service: PreviewCitySearchService(),
+            clock: ContinuousClock(),
+            onSelectCity: coordinator.showForecast(for:)
+        ),
+        mockSearch: MockSearchData()
+    )
 }
+#endif

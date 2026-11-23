@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import BartoszWeather
 
@@ -51,6 +52,32 @@ struct SearchCityContentTests {
         #expect(message.title == "Something went wrong")
         #expect(message.message == "We couldn't load the data. Please try again.")
         #expect(message.showsRetry)
+    }
+
+    @Test func asksToWaitWhenRateLimited() throws {
+        let message = try #require(SearchCityContent.rateLimited.stateMessage)
+        #expect(message.icon == .clockBadgeExclamationmark)
+        #expect(message.title == "Too many requests")
+        #expect(message.message == "The weather service limit has been reached. Please try again later.")
+        #expect(message.showsRetry)
+    }
+
+    @Test(arguments: [
+        (APIError.offline, SearchCityContent.offline),
+        (.server(status: 429, reason: nil), .rateLimited),
+        (.server(status: 503, reason: "The service is overloaded"), .failure),
+        (.server(status: 400, reason: nil), .failure),
+        (.timeout, .failure),
+        (.decoding(description: "bad"), .failure),
+        (.invalidRequest, .failure),
+        (.transport, .failure),
+    ])
+    func mapsAPIErrorsToStates(error: APIError, expected: SearchCityContent) {
+        #expect(SearchCityContent(error: error) == expected)
+    }
+
+    @Test func mapsOtherErrorsToFailure() {
+        #expect(SearchCityContent(error: URLError(.badURL)) == .failure)
     }
 
     @Test(arguments: [
