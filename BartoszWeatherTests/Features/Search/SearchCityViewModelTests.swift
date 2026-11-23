@@ -7,6 +7,7 @@ struct SearchCityViewModelTests {
     private let clock = ImmediateClock()
     private let krakowEntry = SearchHistoryEntry(city: .krakow, forecast: nil)
     private let helEntry = SearchHistoryEntry(city: .hel, forecast: nil)
+    private let zakopaneEntry = SearchHistoryEntry(city: .zakopane, forecast: nil)
 
     private func makeViewModel(
         service: FakeCitySearchService = FakeCitySearchService(cities: []),
@@ -375,22 +376,82 @@ struct SearchCityViewModelTests {
         #expect(viewModel.content == .history([krakowEntry, helEntry]))
     }
 
-    @Test func ignoresALoadThatStartedBeforeADelete() async {
+    @Test func readsTheHistoryAgainWhenADeleteOvertakesALoad() async {
         let history = FakeSearchHistoryRepository(entries: [krakowEntry, helEntry], holdsReads: true)
         let viewModel = makeViewModel(history: history)
         let firstLoad = Task { await viewModel.loadHistory() }
         await history.nextRead()
         history.releaseRead()
         await firstLoad.value
-        let staleLoad = Task { await viewModel.loadHistory() }
+        let overtakenLoad = Task { await viewModel.loadHistory() }
         await history.nextRead()
+        history.store([zakopaneEntry, krakowEntry, helEntry])
+        history.stopHoldingReads()
 
         await viewModel.deleteHistoryEntry(krakowEntry)
-        history.store([krakowEntry, helEntry])
         history.releaseRead()
-        await staleLoad.value
+        await overtakenLoad.value
 
-        #expect(viewModel.content == .history([helEntry]))
+        #expect(history.readCount == 3)
+        #expect(viewModel.content == .history([zakopaneEntry, helEntry]))
+    }
+
+    @Test func readsTheHistoryAgainWhenClearingOvertakesALoad() async {
+        let history = FakeSearchHistoryRepository(entries: [krakowEntry], holdsReads: true)
+        let viewModel = makeViewModel(history: history)
+        let overtakenLoad = Task { await viewModel.loadHistory() }
+        await history.nextRead()
+        history.stopHoldingReads()
+
+        await viewModel.clearHistory()
+        history.releaseRead()
+        await overtakenLoad.value
+
+        #expect(history.readCount == 2)
+        #expect(viewModel.content == .prompt)
+    }
+
+    @Test func doesNotReadTheHistoryAgainAfterADeleteWithNoLoadInFlight() async {
+        let history = FakeSearchHistoryRepository(entries: [krakowEntry, helEntry])
+        let viewModel = makeViewModel(history: history)
+        await viewModel.loadHistory()
+
+        await viewModel.deleteHistoryEntry(krakowEntry)
+
+        #expect(history.readCount == 1)
+    }
+
+    @Test func keepsTheShownHistoryWhenItCannotBeReadAgain() async {
+        let history = FakeSearchHistoryRepository(entries: [krakowEntry])
+        let viewModel = makeViewModel(history: history)
+        await viewModel.loadHistory()
+        history.failReads(with: HistoryFailure())
+
+        await viewModel.loadHistory()
+
+        #expect(viewModel.content == .history([krakowEntry]))
+    }
+
+    @Test func keepsTheHistoryWhenADeleteAndTheReadAfterItFail() async {
+        let history = FakeSearchHistoryRepository(entries: [krakowEntry, helEntry], writeError: HistoryFailure())
+        let viewModel = makeViewModel(history: history)
+        await viewModel.loadHistory()
+        history.failReads(with: HistoryFailure())
+
+        await viewModel.deleteHistoryEntry(krakowEntry)
+
+        #expect(viewModel.content == .history([krakowEntry, helEntry]))
+    }
+
+    @Test func keepsTheHistoryWhenClearingAndTheReadAfterItFail() async {
+        let history = FakeSearchHistoryRepository(entries: [krakowEntry, helEntry], writeError: HistoryFailure())
+        let viewModel = makeViewModel(history: history)
+        await viewModel.loadHistory()
+        history.failReads(with: HistoryFailure())
+
+        await viewModel.clearHistory()
+
+        #expect(viewModel.content == .history([krakowEntry, helEntry]))
     }
 
     @Test func keepsTheHistoryWhenALoadIsCancelled() async {

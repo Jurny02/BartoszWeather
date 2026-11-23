@@ -27,6 +27,7 @@ public final class SearchCityViewModel {
     private let logger = Logger(subsystem: "com.jurny02.BartoszWeather", category: "Search")
     private var historyEntries: [SearchHistoryEntry] = []
     private var historyVersion = 0
+    private var historyLoadsInFlight = 0
 
     public init(
         service: any CitySearchService,
@@ -69,10 +70,12 @@ public final class SearchCityViewModel {
 
     /// Reads the search history and shows it while nothing is searched.
     ///
-    /// A failed read is logged and leaves no history, so the prompt shows instead of an error.
+    /// A failed read is logged and keeps the history shown, so the prompt shows only when none was loaded.
     /// A cancelled load, or one overtaken by a newer load or edit, changes nothing.
     public func loadHistory() async {
         let version = nextHistoryVersion()
+        historyLoadsInFlight += 1
+        defer { historyLoadsInFlight -= 1 }
         let entries: [SearchHistoryEntry]
         do {
             entries = try await history.entries()
@@ -80,7 +83,7 @@ public final class SearchCityViewModel {
             return
         } catch {
             logger.error("Loading the search history failed: \(error, privacy: .public)")
-            entries = []
+            entries = historyEntries
         }
         guard !Task.isCancelled, version == historyVersion else { return }
         showHistory(entries)
@@ -88,29 +91,21 @@ public final class SearchCityViewModel {
 
     /// Removes the entry from the shown history at once and then from the store.
     ///
-    /// When the store cannot be written, the failure is logged and the history is read again.
+    /// When a load was in flight, the history is read again after the write, so entries saved meanwhile show.
+    /// When the store cannot be written, the failure is logged, the entry comes back and the history is read again.
     public func deleteHistoryEntry(_ entry: SearchHistoryEntry) async {
-        nextHistoryVersion()
-        showHistory(historyEntries.filter { $0.id != entry.id })
-        do {
+        await editHistory(showing: historyEntries.filter { $0.id != entry.id }, action: "Deleting a search history entry") {
             try await history.remove(cityID: entry.id)
-        } catch {
-            logger.error("Deleting a search history entry failed: \(error, privacy: .public)")
-            await loadHistory()
         }
     }
 
     /// Empties the shown history at once and then the store.
     ///
-    /// When the store cannot be written, the failure is logged and the history is read again.
+    /// When a load was in flight, the history is read again after the write, so entries saved meanwhile show.
+    /// When the store cannot be written, the failure is logged, the entries come back and the history is read again.
     public func clearHistory() async {
-        nextHistoryVersion()
-        showHistory([])
-        do {
+        await editHistory(showing: [], action: "Clearing the search history") {
             try await history.removeAll()
-        } catch {
-            logger.error("Clearing the search history failed: \(error, privacy: .public)")
-            await loadHistory()
         }
     }
 
@@ -138,6 +133,28 @@ public final class SearchCityViewModel {
     private func nextHistoryVersion() -> Int {
         historyVersion += 1
         return historyVersion
+    }
+
+    private func editHistory(
+        showing editedEntries: [SearchHistoryEntry],
+        action: String,
+        write: () async throws -> Void
+    ) async {
+        let shownEntries = historyEntries
+        let overtakesLoad = historyLoadsInFlight > 0
+        nextHistoryVersion()
+        showHistory(editedEntries)
+        do {
+            try await write()
+        } catch {
+            logger.error("\(action, privacy: .public) failed: \(error, privacy: .public)")
+            showHistory(shownEntries)
+            await loadHistory()
+            return
+        }
+        if overtakesLoad {
+            await loadHistory()
+        }
     }
 
     private func showHistory(_ entries: [SearchHistoryEntry]) {

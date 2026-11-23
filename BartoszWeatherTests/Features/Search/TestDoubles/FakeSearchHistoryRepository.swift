@@ -3,8 +3,9 @@ import os
 
 /// A `SearchHistoryRepository` that keeps entries in memory, can fail any operation and records every call.
 ///
-/// With `holdsReads`, each read waits for `releaseRead()`, so a test can act while a load is in flight;
-/// the read then returns the entries stored at the time it is released.
+/// While reads are held (`holdsReads`), each read waits for `releaseRead()`, so a test can act while a load
+/// is in flight; the read then returns the entries stored at the time it is released.
+/// Hold at most one read at a time: `stopHoldingReads()` lets later reads answer at once.
 /// Like the real repository, a failing write leaves the entries unchanged.
 nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
     /// The state behind the lock: stored entries, injected failures and recorded calls.
@@ -15,10 +16,10 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
         var readCount = 0
         var removedCityIDs: [City.ID] = []
         var removeAllCount = 0
+        var holdsReads: Bool
     }
 
     private let state: OSAllocatedUnfairLock<State>
-    private let holdsReads: Bool
     private let reads = AsyncStream<Void>.makeStream()
     private let releases = AsyncStream<Void>.makeStream()
 
@@ -29,9 +30,10 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
         holdsReads: Bool = false
     ) {
         state = OSAllocatedUnfairLock(
-            initialState: State(entries: entries, readError: readError, writeError: writeError)
+            initialState: State(
+                entries: entries, readError: readError, writeError: writeError, holdsReads: holdsReads
+            )
         )
-        self.holdsReads = holdsReads
     }
 
     /// The entries stored now, newest first.
@@ -59,6 +61,16 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
         state.withLock { $0.entries = entries }
     }
 
+    /// Makes every later read fail with the error, or succeed again with `nil`.
+    func failReads(with error: (any Error)?) {
+        state.withLock { $0.readError = error }
+    }
+
+    /// Lets reads that start from now on answer without waiting for `releaseRead()`.
+    func stopHoldingReads() {
+        state.withLock { $0.holdsReads = false }
+    }
+
     /// Waits until the next read starts.
     func nextRead() async {
         var iterator = reads.stream.makeAsyncIterator()
@@ -71,9 +83,12 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
     }
 
     func entries() async throws -> [SearchHistoryEntry] {
-        state.withLock { $0.readCount += 1 }
+        let holdsRead = state.withLock { state in
+            state.readCount += 1
+            return state.holdsReads
+        }
         reads.continuation.yield()
-        if holdsReads {
+        if holdsRead {
             var iterator = releases.stream.makeAsyncIterator()
             _ = await iterator.next()
         }
