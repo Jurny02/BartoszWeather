@@ -184,6 +184,41 @@ struct SearchCityViewModelTests {
         #expect(viewModel.content == .loading)
     }
 
+    @Test func resetFromResultsShowsThePrompt() async {
+        let viewModel = makeViewModel(service: FakeCitySearchService(cities: [.krakow]))
+        viewModel.query = "Krak"
+        await viewModel.search()
+
+        viewModel.resetSearch()
+
+        #expect(viewModel.query.isEmpty)
+        #expect(viewModel.content == .prompt)
+    }
+
+    @Test func resetFromInvalidInputShowsThePrompt() {
+        let viewModel = makeViewModel(service: FakeCitySearchService(cities: []))
+        viewModel.query = "Krak1"
+
+        viewModel.resetSearch()
+
+        #expect(viewModel.query.isEmpty)
+        #expect(viewModel.content == .prompt)
+    }
+
+    @Test func ignoresAnAnswerThatArrivesAfterTheReset() async {
+        let service = FakeCitySearchService(cities: [.krakow], holdsResponses: true)
+        let viewModel = makeViewModel(service: service)
+        viewModel.query = "Krak"
+        let search = Task { await viewModel.search() }
+
+        _ = await service.nextRequest()
+        viewModel.resetSearch()
+        service.releaseResponse()
+        await search.value
+
+        #expect(viewModel.content == .prompt)
+    }
+
     @Test func reportsTheSelectedCity() {
         var selected: [City] = []
         let viewModel = makeViewModel(service: FakeCitySearchService(cities: [])) { selected.append($0) }
