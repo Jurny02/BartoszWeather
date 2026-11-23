@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shows the forecast view model's state: loading, a full-screen error with a retry,
+/// Shows the forecast view model's state: a loading skeleton, a full-screen error with a retry,
 /// or the forecast with pull-to-refresh and a status line when the last load or refresh failed;
 /// after a failed load, the forecast shown is the city's stored one.
 ///
@@ -48,15 +48,9 @@ struct ForecastScreen: View {
     }
 
     private var loadingView: some View {
-        VStack(spacing: Spacing.small) {
-            ProgressView()
-            Text("Loading forecast…")
-                .typography(.footnote)
-                .foregroundStyle(Color(.Text.secondary))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.background).ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
+        ForecastLoadingView(city: viewModel.city)
+            .background(Color(.background).ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
     }
 
     private func failedView(_ message: ForecastStateMessage) -> some View {
