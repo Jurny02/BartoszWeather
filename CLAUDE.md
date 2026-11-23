@@ -23,6 +23,7 @@ Modules are folders inside one app target, laid out so they can later become rea
 | `App/` | Entry point, composition root, app coordinator | everything |
 | `Core/` | Domain models and shared utilities | nothing |
 | `Networking/` | HTTP client, endpoints, DTOs | `Core` |
+| `Persistence/` | SwiftData stores, stored DTOs, repositories | `Core` |
 | `Theming/` | Design tokens, icons, shared SwiftUI components | `Core` |
 | `Features/<Name>/` | Screens, view models, coordinators, services | `Core`, `Networking`, `Theming` |
 
@@ -32,6 +33,8 @@ Modules are folders inside one app target, laid out so they can later become rea
 - Dependencies are created once in the composition root and injected through initializers.
 - Mark API meant to cross module boundaries as `public` now so the module migration stays mechanical.
 - DTOs stay in `Networking`; mapping DTO to domain happens in the feature service layer and is tested.
+- Repository protocols shared by several features live in `Core`; `Persistence` implements them,
+  keeps SwiftData and its stored DTOs to itself, and only the composition root names the concrete types.
 
 ## Design principles
 
@@ -67,7 +70,7 @@ Feature code stays simple: add an abstraction when a second use or a test needs 
 - One branch and one PR per step, branched from current `main`: `type/short-description`.
 - Conventional Commits: `type(scope): subject` in the imperative mood, subject at most 72 characters.
   - Types: `feat`, `fix`, `test`, `refactor`, `chore`, `ci`, `docs`, `style`.
-  - Scopes: `app`, `core`, `networking`, `theming`, `search`, `forecast`.
+  - Scopes: `app`, `core`, `networking`, `persistence`, `theming`, `search`, `forecast`.
     Leave the scope out only for repository-wide changes (tooling, docs, ignore rules).
 - Each commit is one coherent change with its tests, and builds with green tests.
   Red-green cycles stay local; do not commit failing tests.
