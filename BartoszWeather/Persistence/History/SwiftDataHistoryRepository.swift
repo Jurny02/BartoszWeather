@@ -44,11 +44,11 @@ public actor SwiftDataHistoryRepository: ModelActor, SearchHistoryRepository, Fo
     }
 
     public func entries() throws -> [SearchHistoryEntry] {
-        try commit { _ in
-            try newestFirst().prefix(Self.limit).map { record in
-                SearchHistoryEntry(city: record.city, forecast: validForecast(of: record))
-            }
+        let entries = try newestFirst().prefix(Self.limit).map { record in
+            SearchHistoryEntry(city: record.city, forecast: validForecast(of: record))
         }
+        saveClearedForecasts()
+        return entries
     }
 
     public func remove(cityID: City.ID) throws {
@@ -76,8 +76,18 @@ public actor SwiftDataHistoryRepository: ModelActor, SearchHistoryRepository, Fo
     }
 
     public func forecast(for cityID: City.ID) throws -> Forecast? {
-        try commit { _ in
-            try record(for: cityID).flatMap(validForecast)
+        let forecast = try record(for: cityID).flatMap(validForecast)
+        saveClearedForecasts()
+        return forecast
+    }
+
+    /// Saves the forecasts a read cleared. A failure is logged and does not fail the read;
+    /// the clearing is discarded and happens again on the next read.
+    private func saveClearedForecasts() {
+        do {
+            try commit { _ in }
+        } catch {
+            logger.error("Cannot clear expired or unreadable forecasts: \(error, privacy: .public)")
         }
     }
 
