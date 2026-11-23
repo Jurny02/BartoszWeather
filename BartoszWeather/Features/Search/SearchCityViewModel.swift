@@ -70,7 +70,7 @@ public final class SearchCityViewModel {
         } catch {
             newContent = SearchCityContent(error: error)
         }
-        guard cityQuery == .valid(text) else { return }
+        guard !Task.isCancelled, cityQuery == .valid(text) else { return }
         content = newContent
     }
 

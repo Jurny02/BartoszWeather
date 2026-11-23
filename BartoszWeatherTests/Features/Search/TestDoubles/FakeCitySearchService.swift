@@ -4,16 +4,24 @@ import os
 /// A `CitySearchService` that answers with canned cities or an error and records every query.
 ///
 /// With `holdsResponses`, each answer waits for `releaseResponse()`, so a test can act while a search is in flight.
+/// Cancelling a held search ends the holding, also for the fake's later searches.
 /// Cancellation is honoured like a real service: a cancelled search throws `CancellationError`.
+/// Without `checksCancellation`, it answers anyway, like a request that failed or finished just as it was cancelled.
 nonisolated final class FakeCitySearchService: CitySearchService {
     private let respond: @Sendable (String) throws -> [City]
     private let holdsResponses: Bool
+    private let checksCancellation: Bool
     private let requests = AsyncStream<String>.makeStream()
     private let releases = AsyncStream<Void>.makeStream()
     private let recorded = OSAllocatedUnfairLock<[String]>(initialState: [])
 
-    init(holdsResponses: Bool = false, respond: @escaping @Sendable (String) throws -> [City]) {
+    init(
+        holdsResponses: Bool = false,
+        checksCancellation: Bool = true,
+        respond: @escaping @Sendable (String) throws -> [City]
+    ) {
         self.holdsResponses = holdsResponses
+        self.checksCancellation = checksCancellation
         self.respond = respond
     }
 
@@ -48,7 +56,9 @@ nonisolated final class FakeCitySearchService: CitySearchService {
             var iterator = releases.stream.makeAsyncIterator()
             _ = await iterator.next()
         }
-        try Task.checkCancellation()
+        if checksCancellation {
+            try Task.checkCancellation()
+        }
         return try respond(query)
     }
 }

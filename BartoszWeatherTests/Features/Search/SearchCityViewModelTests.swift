@@ -156,6 +156,21 @@ struct SearchCityViewModelTests {
         #expect(viewModel.content == .loading)
     }
 
+    @Test func keepsTheStateWhenACancelledSearchFailsAnyway() async {
+        let service = FakeCitySearchService(holdsResponses: true, checksCancellation: false) { _ in
+            throw APIError.offline
+        }
+        let viewModel = makeViewModel(service: service)
+        viewModel.query = "Krak"
+        let search = Task { await viewModel.search() }
+
+        _ = await service.nextRequest()
+        search.cancel()
+        await search.value
+
+        #expect(viewModel.content == .loading)
+    }
+
     @Test func skipsTheSearchWhenCancelledDuringTheDebounce() async {
         let service = FakeCitySearchService(cities: [.krakow])
         let viewModel = makeViewModel(service: service)
