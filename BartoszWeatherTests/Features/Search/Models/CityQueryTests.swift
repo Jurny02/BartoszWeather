@@ -43,6 +43,14 @@ struct CityQueryTests {
         #expect(CityQuery(long) == .valid(String(repeating: "a", count: CityQuery.maxLength)))
     }
 
+    @Test func needsALetterWithinTheCap() {
+        #expect(CityQuery(String(repeating: "-", count: CityQuery.maxLength) + "A") == .invalid)
+    }
+
+    @Test func rejectsDisallowedCharactersBeyondTheCap() {
+        #expect(CityQuery(String(repeating: "a", count: CityQuery.maxLength) + "1") == .invalid)
+    }
+
     @Test func doesNotEndWithASpaceWhenTheCapCutsAtOne() {
         let long = String(repeating: "a", count: CityQuery.maxLength - 1) + " bbb"
         #expect(CityQuery(long) == .valid(String(repeating: "a", count: CityQuery.maxLength - 1)))
