@@ -38,7 +38,7 @@ struct AppCoordinatorView: View {
             onSelectCity: coordinator.showForecast(for:)
         ),
         makeForecastViewModel: { city in
-            ForecastViewModel(city: city, service: PreviewForecastService(result: .success(.krakowDay)))
+            ForecastViewModel(city: city, repository: PreviewForecastRepository(result: .success(.krakowDay)))
         }
     )
 }
