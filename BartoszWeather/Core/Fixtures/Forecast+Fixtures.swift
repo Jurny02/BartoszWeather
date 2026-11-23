@@ -96,7 +96,10 @@ extension Forecast {
             wind: Wind(speed: 6, gusts: 12, direction: 315)
         ),
         hourly: zakopaneFixture.hourly(
-            temperatures: [-12, -13, -13, -14, -14, -15, -15, -14, -12, -10, -8, -7, -6, -6, -7, -9, -10, -11, -12, -12, -13, -13, -14, -14],
+            temperatures: [
+                -12, -13, -13, -14, -14, -15, -15, -14, -12, -10, -8, -7,
+                -6, -6, -7, -9, -10, -11, -12, -12, -13, -13, -14, -14,
+            ],
             conditions: [.clearSky, .clearSky, .mainlyClear, .partlyCloudy, .snowShowers, .snow],
             precipitation: [0, 0, 0, 5, 30, 50]
         ),

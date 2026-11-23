@@ -25,14 +25,16 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         guard let response = response as? HTTPURLResponse else {
             throw APIError.transport
         }
-        logger.debug("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) \(response.statusCode) in \(start.duration(to: .now), privacy: .public)")
+        let route = "\(endpoint.method.rawValue) \(endpoint.path)"
+        logger.debug("\(route, privacy: .public) \(response.statusCode) in \(start.duration(to: .now), privacy: .public)")
 
         guard (200..<300).contains(response.statusCode) else {
             let reason = endpoint.errorReason(from: data)
-            logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
+            logger.error("\(route, privacy: .public) failed: \(reason ?? "no reason", privacy: .private)")
             throw APIError.server(status: response.statusCode, reason: reason)
         }
-        guard data.isEmpty || endpoint.acceptsResponse(contentType: response.value(forHTTPHeaderField: "Content-Type")) else {
+        let contentType = response.value(forHTTPHeaderField: "Content-Type")
+        guard data.isEmpty || endpoint.acceptsResponse(contentType: contentType) else {
             throw APIError.offline
         }
         do {
@@ -40,7 +42,7 @@ nonisolated public final class URLSessionAPIClient: APIClient {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            logger.error("\(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) decoding failed: \(error, privacy: .private)")
+            logger.error("\(route, privacy: .public) decoding failed: \(error, privacy: .private)")
             throw APIError.decoding(description: String(describing: error))
         }
     }
@@ -72,7 +74,8 @@ nonisolated public final class URLSessionAPIClient: APIClient {
 
     private func responseTooLarge(_ bytes: URLSession.AsyncBytes, for request: URLRequest) -> APIError {
         bytes.task.cancel()
-        logger.error("\(request.httpMethod ?? "", privacy: .public) \(request.url?.path() ?? "", privacy: .public) exceeded \(Self.maxResponseSize) bytes")
+        let route = "\(request.httpMethod ?? "") \(request.url?.path() ?? "")"
+        logger.error("\(route, privacy: .public) exceeded \(Self.maxResponseSize) bytes")
         return .transport
     }
 

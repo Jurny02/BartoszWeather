@@ -29,11 +29,11 @@ nonisolated final class StubURLProtocol: URLProtocol {
         register { _ in throw URLError(code) }
     }
 
-    override class func canInit(with request: URLRequest) -> Bool {
+    override static func canInit(with request: URLRequest) -> Bool {
         true
     }
 
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest {
         request
     }
 
@@ -69,9 +69,9 @@ nonisolated extension URLRequest {
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: 4096)
         while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            guard count > 0 else { break }
-            data.append(buffer, count: count)
+            let bytesRead = stream.read(&buffer, maxLength: buffer.count)
+            guard bytesRead > 0 else { break }
+            data.append(buffer, count: bytesRead)
         }
         return data
     }

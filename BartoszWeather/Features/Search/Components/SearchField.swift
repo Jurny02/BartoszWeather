@@ -77,9 +77,14 @@ struct SearchField: View {
 
 /// Hosts one search field in previews with its own editable text and focus.
 private struct SearchFieldPreview: View {
-    @State var text: String
+    @State private var text: String
     let isInvalid: Bool
     @FocusState private var isFocused: Bool
+
+    init(text: String, isInvalid: Bool) {
+        _text = State(initialValue: text)
+        self.isInvalid = isInvalid
+    }
 
     var body: some View {
         SearchField(text: $text, isInvalid: isInvalid, isFocused: $isFocused)
