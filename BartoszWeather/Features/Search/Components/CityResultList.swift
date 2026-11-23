@@ -29,9 +29,12 @@ struct CityResultList: View {
 }
 
 /// One found city: the name with the typed part emphasized, the line that tells same-name places apart, and a chevron.
+///
+/// At accessibility text sizes the name and subtitle wrap instead of being truncated.
 struct CityResultRow: View {
     private let city: City
     private let query: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var chevronSize = 12.0
 
     init(city: City, query: String) {
@@ -40,16 +43,17 @@ struct CityResultRow: View {
     }
 
     var body: some View {
+        let lineLimit = dynamicTypeSize.isAccessibilitySize ? nil : 1
         HStack(spacing: Spacing.small) {
             VStack(alignment: .leading, spacing: Spacing.xxSmall) {
                 Text(highlightedName)
                     .typography(.headline)
-                    .lineLimit(1)
+                    .lineLimit(lineLimit)
                 if let subtitle = city.resultSubtitle {
                     Text(subtitle)
                         .typography(.footnote)
                         .foregroundStyle(Color(.Text.secondary))
-                        .lineLimit(1)
+                        .lineLimit(lineLimit)
                 }
             }
             Spacer(minLength: 0)

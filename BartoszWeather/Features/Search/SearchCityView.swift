@@ -242,6 +242,11 @@ struct SearchCityView: View {
         .dynamicTypeSize(.accessibility3)
 }
 
+#Preview("Large Dynamic Type history") {
+    SearchCityPreview(query: "", content: .history(SearchHistoryEntry.previewEntries))
+        .dynamicTypeSize(.accessibility3)
+}
+
 /// Hosts the search screen in previews with an editable query and no-op actions.
 private struct SearchCityPreview: View {
     @State var query: String
