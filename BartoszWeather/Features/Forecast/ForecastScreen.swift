@@ -97,7 +97,7 @@ struct ForecastScreen: View {
 #Preview("Loaded") {
     NavigationStack {
         ForecastScreen(
-            viewModel: ForecastViewModel(city: .krakow, service: PreviewForecastService(result: .success(.krakowDay))),
+            viewModel: ForecastViewModel(city: .krakow, repository: PreviewForecastRepository(result: .success(.krakowDay))),
             now: Forecast.krakowNow
         )
     }
@@ -105,7 +105,7 @@ struct ForecastScreen: View {
 
 #Preview("Offline") {
     NavigationStack {
-        ForecastScreen(viewModel: ForecastViewModel(city: .krakow, service: PreviewForecastService(result: .failure(.offline))))
+        ForecastScreen(viewModel: ForecastViewModel(city: .krakow, repository: PreviewForecastRepository(result: .failure(.offline))))
     }
 }
 
@@ -113,7 +113,7 @@ struct ForecastScreen: View {
     NavigationStack {
         ForecastScreen(viewModel: ForecastViewModel(
             city: .krakow,
-            service: PreviewForecastService(result: .failure(.server(status: 503, reason: nil)))
+            repository: PreviewForecastRepository(result: .failure(.server(status: 503, reason: nil)))
         ))
     }
 }

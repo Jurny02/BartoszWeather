@@ -19,12 +19,12 @@ public final class ForecastViewModel {
     public let city: City
     public private(set) var state = ForecastScreenState.loading
 
-    private let service: any ForecastService
+    private let repository: any ForecastRepository
     private var latestRequest = 0
 
-    public init(city: City, service: any ForecastService) {
+    public init(city: City, repository: any ForecastRepository) {
         self.city = city
-        self.service = service
+        self.repository = repository
     }
 
     /// Loads the forecast while the screen is still loading; a cancelled load can be finished by calling it again.
@@ -47,7 +47,7 @@ public final class ForecastViewModel {
         let request = startRequest()
         let newState: ForecastScreenState
         do {
-            newState = .loaded(try await service.forecast(for: city), issue: nil)
+            newState = .loaded(try await repository.forecast(for: city), issue: nil)
         } catch is CancellationError {
             return
         } catch {
@@ -60,7 +60,7 @@ public final class ForecastViewModel {
         let request = startRequest()
         let newState: ForecastScreenState
         do {
-            newState = .loaded(try await service.forecast(for: city), issue: nil)
+            newState = .loaded(try await repository.forecast(for: city), issue: nil)
         } catch is CancellationError {
             return
         } catch {
