@@ -1,36 +1,28 @@
 import SwiftUI
 
-/// The navigation stack driven by `AppCoordinator`, with the search screen at its root.
+/// The navigation stack driven by `AppCoordinator`, with the search screen at its root
+/// and a forecast screen pushed for each selected city.
 struct AppCoordinatorView: View {
     @Bindable private var coordinator: AppCoordinator
     private let searchViewModel: SearchCityViewModel
-    private let mockSearch: MockSearchData
+    private let makeForecastViewModel: (City) -> ForecastViewModel
 
-    init(coordinator: AppCoordinator, searchViewModel: SearchCityViewModel, mockSearch: MockSearchData) {
+    init(
+        coordinator: AppCoordinator,
+        searchViewModel: SearchCityViewModel,
+        makeForecastViewModel: @escaping (City) -> ForecastViewModel
+    ) {
         self.coordinator = coordinator
         self.searchViewModel = searchViewModel
-        self.mockSearch = mockSearch
+        self.makeForecastViewModel = makeForecastViewModel
     }
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
             SearchCityScreen(viewModel: searchViewModel)
                 .navigationDestination(for: City.self) { city in
-                    forecastScreen(for: city)
+                    ForecastScreen(viewModel: makeForecastViewModel(city))
                 }
-        }
-    }
-
-    @ViewBuilder
-    private func forecastScreen(for city: City) -> some View {
-        if let forecast = mockSearch.forecast(for: city) {
-            ForecastView(city: city, forecast: forecast, now: forecast.current.date)
-        } else {
-            StateView(
-                icon: .exclamationmarkTriangle,
-                title: String(localized: "Something went wrong"),
-                message: String(localized: "We couldn't load the data. Please try again.")
-            )
         }
     }
 }
@@ -45,7 +37,9 @@ struct AppCoordinatorView: View {
             clock: ContinuousClock(),
             onSelectCity: coordinator.showForecast(for:)
         ),
-        mockSearch: MockSearchData()
+        makeForecastViewModel: { city in
+            ForecastViewModel(city: city, service: PreviewForecastService(result: .success(.krakowDay)))
+        }
     )
 }
 #endif
