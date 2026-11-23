@@ -26,5 +26,8 @@ extension SearchHistoryEntry {
         SearchHistoryEntry(city: .zakopane, forecast: .zakopaneNight),
         SearchHistoryEntry(city: .hel, forecast: .helStrongWind),
     ]
+
+    /// Fixture entry whose forecast is too old to show.
+    static let expiredEntry = SearchHistoryEntry(city: City.searchResults[1], forecast: nil)
 }
 #endif
