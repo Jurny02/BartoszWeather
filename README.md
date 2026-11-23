@@ -38,6 +38,18 @@ Extras:
   VoiceOver labels and actions, for example deleting a history entry.
 - Times are shown in the city's own time zone, including across daylight-saving changes.
 
+## Design
+
+The UI is based on a Figma design. Its variables became the `Theming` design tokens, and its shared components became `Theming` views:
+
+- Colors from the Figma `Color` collection, each with a light and a dark variant.
+- Spacing and corner radii from the `Dimensions` collection.
+- Text styles from the `iOS/*` type scale, scaled with Dynamic Type.
+- Shared components, such as the retry button and the empty and error states.
+
+Where Figma names differ from Swift naming conventions, the code follows the conventions. For example, the `SearchHistoryView`
+frame became `SearchCityView`.
+
 ## Getting started
 
 Requirements: Xcode 27 or later (the project uses the Xcode 27 project format) and an iOS 17+ simulator or device. There is no API key to set and there are no third-party dependencies.
