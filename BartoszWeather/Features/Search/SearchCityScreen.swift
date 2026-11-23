@@ -2,6 +2,8 @@ import SwiftUI
 
 /// Connects `SearchCityView` to its view model and restarts the debounced search whenever the searched query changes.
 ///
+/// The search starts over each time the screen appears, such as on the return from a forecast.
+///
 /// A retry is cancelled by the next query change or when the screen disappears, like the debounced search.
 struct SearchCityScreen: View {
     @Bindable private var viewModel: SearchCityViewModel
@@ -23,6 +25,9 @@ struct SearchCityScreen: View {
         .task(id: viewModel.cityQuery) {
             retryTask?.cancel()
             await viewModel.search()
+        }
+        .onAppear {
+            viewModel.resetSearch()
         }
         .onDisappear {
             retryTask?.cancel()

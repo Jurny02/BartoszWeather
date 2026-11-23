@@ -54,6 +54,11 @@ public final class SearchCityViewModel {
         await fetch()
     }
 
+    /// Clears the query, so the screen starts over with the prompt; a search still in flight is ignored when it answers.
+    public func resetSearch() {
+        query = ""
+    }
+
     public func select(_ city: City) {
         onSelectCity(city)
     }
