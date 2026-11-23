@@ -70,6 +70,9 @@ xcodebuild test  -scheme BartoszWeather -destination 'platform=iOS Simulator,nam
 swiftlint lint --strict
 ```
 
+Replace `iPhone 17` with any iOS 17+ simulator listed by `xcrun simctl list devices available iOS`.
+SwiftLint is only needed for linting: `brew install swiftlint`. CI pins 0.59.1, and newer versions may report extra warnings.
+
 ## Architecture
 
 The app uses **MVVM-C**: views render state and forward user intents, `@Observable` view models own the state and logic,
