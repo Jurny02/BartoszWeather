@@ -6,6 +6,7 @@ import os
 /// While reads are held (`holdsReads`), each read waits for `releaseRead()`, so a test can act while a load
 /// is in flight; the read then returns the entries stored at the time it is released.
 /// Hold at most one read at a time: `stopHoldingReads()` lets later reads answer at once.
+/// With `holdsWrites`, each write waits for `releaseWrite()` before it changes the entries.
 /// Like the real repository, a failing write leaves the entries unchanged.
 nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
     /// The state behind the lock: stored entries, injected failures and recorded calls.
@@ -20,20 +21,25 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
     }
 
     private let state: OSAllocatedUnfairLock<State>
+    private let holdsWrites: Bool
     private let reads = AsyncStream<Void>.makeStream()
     private let releases = AsyncStream<Void>.makeStream()
+    private let writes = AsyncStream<Void>.makeStream()
+    private let writeReleases = AsyncStream<Void>.makeStream()
 
     init(
         entries: [SearchHistoryEntry] = [],
         readError: (any Error)? = nil,
         writeError: (any Error)? = nil,
-        holdsReads: Bool = false
+        holdsReads: Bool = false,
+        holdsWrites: Bool = false
     ) {
         state = OSAllocatedUnfairLock(
             initialState: State(
                 entries: entries, readError: readError, writeError: writeError, holdsReads: holdsReads
             )
         )
+        self.holdsWrites = holdsWrites
     }
 
     /// The entries stored now, newest first.
@@ -82,6 +88,17 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
         releases.continuation.yield()
     }
 
+    /// Waits until the next write starts.
+    func nextWrite() async {
+        var iterator = writes.stream.makeAsyncIterator()
+        _ = await iterator.next()
+    }
+
+    /// Lets one held write change the entries.
+    func releaseWrite() {
+        writeReleases.continuation.yield()
+    }
+
     func entries() async throws -> [SearchHistoryEntry] {
         let holdsRead = state.withLock { state in
             state.readCount += 1
@@ -100,6 +117,7 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
     }
 
     func remove(cityID: City.ID) async throws {
+        await holdWriteIfNeeded()
         try state.withLock { state in
             state.removedCityIDs.append(cityID)
             if let error = state.writeError { throw error }
@@ -108,10 +126,18 @@ nonisolated final class FakeSearchHistoryRepository: SearchHistoryRepository {
     }
 
     func removeAll() async throws {
+        await holdWriteIfNeeded()
         try state.withLock { state in
             state.removeAllCount += 1
             if let error = state.writeError { throw error }
             state.entries.removeAll()
         }
+    }
+
+    private func holdWriteIfNeeded() async {
+        writes.continuation.yield()
+        guard holdsWrites else { return }
+        var iterator = writeReleases.stream.makeAsyncIterator()
+        _ = await iterator.next()
     }
 }

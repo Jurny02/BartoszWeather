@@ -411,6 +411,21 @@ struct SearchCityViewModelTests {
         #expect(viewModel.content == .prompt)
     }
 
+    @Test func readsTheHistoryAgainWhenALoadStartsDuringADelete() async {
+        let history = FakeSearchHistoryRepository(entries: [krakowEntry, helEntry], holdsWrites: true)
+        let viewModel = makeViewModel(history: history)
+        await viewModel.loadHistory()
+        let delete = Task { await viewModel.deleteHistoryEntry(krakowEntry) }
+        await history.nextWrite()
+
+        await viewModel.loadHistory()
+        history.releaseWrite()
+        await delete.value
+
+        #expect(history.readCount == 3)
+        #expect(viewModel.content == .history([helEntry]))
+    }
+
     @Test func doesNotReadTheHistoryAgainAfterADeleteWithNoLoadInFlight() async {
         let history = FakeSearchHistoryRepository(entries: [krakowEntry, helEntry])
         let viewModel = makeViewModel(history: history)

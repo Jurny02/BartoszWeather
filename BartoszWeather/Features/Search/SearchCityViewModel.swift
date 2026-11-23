@@ -28,6 +28,7 @@ public final class SearchCityViewModel {
     private var historyEntries: [SearchHistoryEntry] = []
     private var historyVersion = 0
     private var historyLoadsInFlight = 0
+    private var historyLoadsStarted = 0
 
     public init(
         service: any CitySearchService,
@@ -75,6 +76,7 @@ public final class SearchCityViewModel {
     public func loadHistory() async {
         let version = nextHistoryVersion()
         historyLoadsInFlight += 1
+        historyLoadsStarted += 1
         defer { historyLoadsInFlight -= 1 }
         let entries: [SearchHistoryEntry]
         do {
@@ -91,7 +93,8 @@ public final class SearchCityViewModel {
 
     /// Removes the entry from the shown history at once and then from the store.
     ///
-    /// When a load was in flight, the history is read again after the write, so entries saved meanwhile show.
+    /// When a load was in flight or started during the write, the history is read again after the write,
+    /// so the shown entries match the store.
     /// When the store cannot be written, the failure is logged, the entry comes back and the history is read again.
     public func deleteHistoryEntry(_ entry: SearchHistoryEntry) async {
         await editHistory(showing: historyEntries.filter { $0.id != entry.id }, action: "Deleting a search history entry") {
@@ -101,7 +104,8 @@ public final class SearchCityViewModel {
 
     /// Empties the shown history at once and then the store.
     ///
-    /// When a load was in flight, the history is read again after the write, so entries saved meanwhile show.
+    /// When a load was in flight or started during the write, the history is read again after the write,
+    /// so the shown entries match the store.
     /// When the store cannot be written, the failure is logged, the entries come back and the history is read again.
     public func clearHistory() async {
         await editHistory(showing: [], action: "Clearing the search history") {
@@ -142,6 +146,7 @@ public final class SearchCityViewModel {
     ) async {
         let shownEntries = historyEntries
         let overtakesLoad = historyLoadsInFlight > 0
+        let loadsStartedBeforeWrite = historyLoadsStarted
         nextHistoryVersion()
         showHistory(editedEntries)
         do {
@@ -152,7 +157,7 @@ public final class SearchCityViewModel {
             await loadHistory()
             return
         }
-        if overtakesLoad {
+        if overtakesLoad || historyLoadsStarted != loadsStartedBeforeWrite {
             await loadHistory()
         }
     }
