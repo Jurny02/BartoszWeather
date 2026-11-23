@@ -72,7 +72,7 @@ struct HistoryCard: View {
 #Preview {
     ScrollView {
         VStack(spacing: Spacing.small) {
-            ForEach(SearchHistoryEntry.previewEntries) { entry in
+            ForEach(SearchHistoryEntry.previewEntries + [.expiredEntry]) { entry in
                 HistoryCard(entry: entry)
             }
         }

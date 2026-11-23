@@ -102,4 +102,25 @@ struct SearchHistoryEntryPresentationTests {
                 == "Kraków, Małopolskie, Poland. No data. Clear sky. Low No data, high No data."
         )
     }
+
+    @Test func showsDashesWithoutAForecast() {
+        let entry = SearchHistoryEntry(city: city, forecast: nil)
+        #expect(entry.temperatureText == "—")
+        #expect(entry.conditionText == "No data")
+        #expect(entry.rangeText == "— – —")
+    }
+
+    @Test func usesTheUnknownConditionLookWithoutAForecast() {
+        let entry = SearchHistoryEntry(city: city, forecast: nil)
+        #expect(entry.icon == .exclamationmarkIcloud)
+        #expect(entry.appearance == .day)
+        #expect(entry.sky == .overcast)
+    }
+
+    @Test func readsOnlyTheCityWithoutAForecast() {
+        #expect(
+            SearchHistoryEntry(city: city, forecast: nil).accessibilityLabel
+                == "Kraków, Małopolskie, Poland. No data."
+        )
+    }
 }
