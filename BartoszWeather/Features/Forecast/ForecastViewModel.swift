@@ -12,13 +12,15 @@ nonisolated public enum ForecastScreenState: Hashable, Sendable {
 
 /// Owns the forecast screen's state for one city: the first load, retries after a failure and pull-to-refresh.
 ///
-/// A cancelled load or refresh never changes the state.
+/// Only the most recently started load or refresh changes the state; a cancelled or superseded one never does.
+/// A cancelled request still supersedes the older ones, so the next call to `load()` or `retry()` finishes the work.
 @Observable
 public final class ForecastViewModel {
     public let city: City
     public private(set) var state = ForecastScreenState.loading
 
     private let service: any ForecastService
+    private var latestRequest = 0
 
     public init(city: City, service: any ForecastService) {
         self.city = city
@@ -42,6 +44,7 @@ public final class ForecastViewModel {
     /// Does nothing before a forecast is loaded.
     public func refresh() async {
         guard case .loaded(let forecast, _) = state else { return }
+        let request = startRequest()
         let newState: ForecastScreenState
         do {
             newState = .loaded(try await service.forecast(for: city), issue: nil)
@@ -50,11 +53,11 @@ public final class ForecastViewModel {
         } catch {
             newState = .loaded(forecast, issue: ForecastIssue(error: error))
         }
-        guard !Task.isCancelled else { return }
-        state = newState
+        commit(newState, for: request)
     }
 
     private func fetch() async {
+        let request = startRequest()
         let newState: ForecastScreenState
         do {
             newState = .loaded(try await service.forecast(for: city), issue: nil)
@@ -63,7 +66,16 @@ public final class ForecastViewModel {
         } catch {
             newState = .failed(ForecastIssue(error: error))
         }
-        guard !Task.isCancelled else { return }
+        commit(newState, for: request)
+    }
+
+    private func startRequest() -> Int {
+        latestRequest += 1
+        return latestRequest
+    }
+
+    private func commit(_ newState: ForecastScreenState, for request: Int) {
+        guard !Task.isCancelled, request == latestRequest else { return }
         state = newState
     }
 }
