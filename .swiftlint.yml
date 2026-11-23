@@ -51,7 +51,10 @@ large_tuple:
 custom_rules:
   no_xctest:
     name: Swift Testing only
-    regex: '^[^/"\n]*\bimport\s+(\w+\s+)?XCTest\b'
+    regex: '\bimport\s+(\w+\s+)?XCTest\b'
+    match_kinds:
+      - keyword
+      - identifier
     message: Use Swift Testing (`import Testing`) instead of XCTest.
     severity: error
 
