@@ -1,6 +1,5 @@
 # BartoszWeather
 
-[![CI](https://github.com/Jurny02/BartoszWeather/actions/workflows/ci.yml/badge.svg)](https://github.com/Jurny02/BartoszWeather/actions/workflows/ci.yml)
 ![iOS 17+](https://img.shields.io/badge/iOS-17%2B-blue)
 ![Swift 6](https://img.shields.io/badge/Swift-6-orange)
 ![Xcode 27](https://img.shields.io/badge/Xcode-27-lightgrey)
